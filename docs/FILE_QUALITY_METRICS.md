@@ -10,34 +10,45 @@ Quality and coverage dimensions are strictly separated:
 
 ---
 
-## 2. Reconciled Raw Stream Quality Scorecard (84.97 Quality Points)
+## 2. Reconciled Raw Stream Quality Scorecard (91.14 Quality Points)
 
-Evaluated across all **1,511,720 raw expanded price records** in `raw_price_audit.parquet`.
-In Centene's rate file, 100% of contracts specify the evergreen placeholder `9999-12-31`. Because evergreen placeholders represent uninformative currency, `Q6_STALENESS` is marked as `NOT_EVALUABLE` and assigned weight 0.00. The remaining 7 active metrics are dynamically renormalized by dividing base weights by $0.95$, summing to exactly $1.0000$.
+Evaluated across all **1,511,720 raw expanded price records** in `raw_price_audit.parquet` across 8 canonical TiC quality metrics summing to weight $1.0000$.
 
-| Metric ID | Metric Name | Base Wt | Norm Wt | Measured Raw Value | Metric Score | Weighted Points | Relational Significance & Formula |
-| :--- | :--- | :---: | :---: | :--- | :---: | :---: | :--- |
-| **Q1_NPI_LUHN** | NPI Luhn Checksum Validity | 0.15 | 0.1579 | 99.97% valid (1 invalid: NPI 0 placeholder) | 99.97 | 15.79 | Modulo-10 check digit verification over `80840 + NPI` |
-| **Q2_ZERO_RATE** | Zero / Null Rate Share | 0.05 | 0.0526 | 0.00% zero or missing rates (saturated) | 100.00 | 5.26 | Saturated contractual baseline: $\max(0, 100 - \text{zero\_pct} \times 10)$ |
-| **Q3_OUTLIER_SHARE**| Rate Outlier Ratio (Robust MAD) | 0.20 | 0.2105 | 5.38% log-rate outliers per code/class | 64.16 | 13.51 | Outliers exceeding $2.5 \times \text{MAD}$ on $\log(\text{rate})$ per code and class |
-| **Q4_NEGOTIATED_MIX**| Negotiated Dollar Rate Mix | 0.10 | 0.1053 | 99.98% explicit negotiated dollar rates | 99.98 | 10.53 | Share of explicit dollar rates over percentage fee schedules |
-| **Q5_DUPLICATE_RATIO**| Exact Duplicate Rate Ratio | 0.10 | 0.1053 | 97.90% exact duplicates across references | 2.10 | 0.22 | Identical `(npi, tin, code, class, mod, sc, setting, rate, add_info)` |
-| **Q6_STALENESS** | Expiration Date Currency | 0.05 | 0.0000 | `NOT_EVALUABLE` (100.0% evergreen `9999-12-31`) | 70.00 | 0.00 | Excluded when 100% evergreen; falls monotonically when real dates exist |
-| **Q7_SCHEMA_VALIDITY**| Schema Completeness | 0.15 | 0.1579 | 100.00% mandatory TiC fields populated | 100.00 | 15.79 | Mandatory presence of `tin`, `billing_code`, `negotiated_rate`, `class` |
-| **Q8_INTERNAL_CONSISTENCY**| Internal Rate Consistency | 0.20 | 0.2105 | 3.09% multi-rate finest keys | 93.82 | 19.75 | Conflict rate on finest key: $\max(0, 100 - \text{conflict\_pct} \times 2)$ |
-| **DESCR_STRUCT_MULT**| Structural Multiplicity | 0.00 | 0.0000 | 98.55% coarse-grain multi-price share | 1.45 | 0.00 | Descriptive volume of contract prices collapsed during tie-breaking |
-| **TOTALS** | | **0.95** | **1.0000** | | | **84.97** | **Quality Score = 84.97** |
+| Metric ID | Metric Name | Weight | Measured Raw Value | Metric Score | Weighted Points | Relational Significance & Formula |
+| :--- | :--- | :---: | :--- | :---: | :---: | :--- |
+| **Q1_NPI_LUHN** | NPI Luhn Checksum Validity | 0.15 | 99.97% valid (1 invalid: NPI 0 placeholder) | 99.97 | 15.00 | Modulo-10 check digit verification over `80840 + NPI` |
+| **Q2_ZERO_RATE** | Zero / Null Rate Share | 0.05 | 0.00% zero or missing rates (saturated) | 100.00 | 5.00 | Saturated contractual baseline: $\max(0, 100 - \text{zero\_pct} \times 10)$ |
+| **Q3_OUTLIER_SHARE**| Rate Outlier Ratio (Robust MAD) | 0.20 | 4.90% log-rate outliers per code/class | 67.30 | 13.46 | Outliers exceeding $2.5 \times \text{MAD}$ on $\log(\text{rate})$ per code and class |
+| **Q4_NEGOTIATED_MIX**| Negotiated Dollar Rate Mix | 0.10 | 99.98% explicit negotiated dollar rates | 99.98 | 10.00 | Share of explicit dollar rates over percentage fee schedules |
+| **Q5_DUPLICATE_RATIO**| Exact Duplicate Rate Ratio | 0.10 | 0.76% true within-block duplicates (11,432 rows) | 99.24 | 9.92 | True duplicate price records within item blocks; structural cross-reference fan-out (97.90%) reported as informational |
+| **Q6_STALENESS** | Expiration Date Currency | 0.05 | 80.00 pts (11d publication age, 30pt evergreen penalty) | 80.00 | 4.00 | Published 2026-10-06 vs 2026-10-17 run date (11d old <= 30d -> 100 pts) with documented 30pt evergreen contract penalty |
+| **Q7_SCHEMA_VALIDITY**| Schema Completeness | 0.15 | 100.00% mandatory TiC fields populated | 100.00 | 15.00 | Mandatory presence of `tin`, `billing_code`, `negotiated_rate`, `class` |
+| **Q8_INTERNAL_CONSISTENCY**| Internal Rate Consistency | 0.20 | 3.09% multi-rate finest keys | 93.82 | 18.76 | Conflict rate on finest key: $\max(0, 100 - \text{conflict\_pct} \times 2)$ |
+| **DESCR_STRUCT_MULT**| Structural Multiplicity | 0.00 | 97.90% structural cross-reference fan-out | 2.10 | 0.00 | Descriptive volume of contract prices collapsed during tie-breaking (1,480,048 duplicates) |
+| **TOTALS** | | **1.0000** | | | **91.14** | **Quality Score = 91.14 (Grade A)** |
 
 ---
 
 ## 3. Data Coverage Scorecard (HiLabs Benchmark)
 
 - **Official HiLabs Benchmark Coverage (C1)**: Evaluated against official procedure code weights in HiLabs Sheet 3 (`Spec-Proc Weights`).
-  - Total expected CPT/HCPCS procedure codes: 1,000
-  - Matching CPT/HCPCS procedure codes in Centene file: 588 codes
-  - Weighted code coverage score: **68.81%**
+  - Total procedure codes in HiLabs benchmark workbook: 583 distinct procedure codes (946 specialty-procedure pairs; total weight 21,205,590,948).
+  - Matching distinct procedure codes in Centene file: **134 distinct codes** (sum of matched weights: 14,590,967,314).
+  - Weighted code coverage score: **68.81%** ($\frac{14,590,967,314}{21,205,590,948}$)
+  - Unweighted distinct code coverage: **22.98%** ($\frac{134}{583}$)
 - **Combined File Score & Final Grade**:
-  $$\text{Combined Score} = 0.60 \times 84.97 + 0.40 \times 68.81 = 50.98 + 27.52 = \mathbf{78.51} \quad (\mathbf{Grade\ C})$$
+  $$\text{Combined Score} = 0.60 \times 91.14 + 0.40 \times 68.81 = 54.684 + 27.524 = \mathbf{82.21} \quad (\mathbf{Grade\ B})$$
+
+
+---
+
+## 3.1 Rate Reliability Formula & Classification
+Rate reliability evaluates contractual rate stability across the curated grain `(npi, tin, billing_code, billing_class, billing_code_type, additional_information)`:
+$$\text{rate\_spread\_ratio} = \frac{\text{rate\_max}}{\text{rate\_min}} \quad (\text{for } \text{rate\_min} > 0)$$
+
+- **`HIGH` Reliability ($\text{rate\_spread\_ratio} \le 1.0$)**: Single observed contract price ($N=1$) or identical multi-contract rate matches where maximum rate equals minimum rate ($\text{rate\_spread\_ratio} = 1.00$). Represents **26,528 keys (96.26%)** of all curated contract keys.
+- **`MEDIUM` Reliability ($1.0 < \text{rate\_spread\_ratio} \le 3.0$)**: Narrow contractual dispersion within a factor of 3.0. Represents **875 keys (3.18%)**.
+- **`LOW` Reliability ($\text{rate\_spread\_ratio} > 3.0$)**: Extreme rate variation across bundled contracts. Flagged with `spread_flag = True` and excluded from peer competitiveness frontiers. Represents only **156 keys (0.57%)**.
 
 ---
 
@@ -65,16 +76,18 @@ This duplication includes `additional_information` in the exact-duplicate hash.
 
 Each mutation was executed across a 50,000-row sample to prove that metrics respond sensitively and monotonically to data corruption:
 
-| Mutation ID | Targeted Metric | Metric Score Before | Metric Score After | Metric Score $\Delta$ | Normalized Weight | Weighted Delta ($\Delta \times w_i$) | Measured Value Before | Measured Value After | Overall Quality Score Movement |
+| Mutation ID | Targeted Metric | Metric Score Before | Metric Score After | Metric Score $\Delta$ | Metric Weight | Weighted Delta ($\Delta \times w_i$) | Measured Value Before | Measured Value After | Overall Quality Score Movement |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- | :--- | :--- |
-| **M1_ZERO_RATES** | Q2_ZERO_RATE | 100.00 | 0.00 | -100.00 | 0.0526 | -5.26 | 0.00% zeros | 10.00% zeros | 78.59 $\to$ 56.67 (-21.92 pts) |
-| **M2_DUPLICATE_ROWS** | Q5_DUPLICATE_RATIO | 3.91 | 2.61 | -1.30 | 0.1053 | -0.14 | 96.09% dups | 97.39% dups | 78.59 $\to$ 78.11 (-0.48 pts) |
-| **M3_EXPIRED_DATES** | Q6_STALENESS | 70.00 | 60.00 | -10.00 | 0.0500 | -0.50 | `NOT_EVALUABLE` | 20.00% expired | 78.59 $\to$ 77.66 (-0.93 pts) |
-| **M4_CONFLICTING_RATES**| Q8_INTERNAL_CONSISTENCY | 82.19 | 0.00 | -82.19 | 0.2105 | -17.30 | 8.90% conflicts | 68.78% conflicts | 78.59 $\to$ 62.18 (-16.41 pts) |
-| **M5_INVALID_NPIS** | Q1_NPI_LUHN | 100.00 | 88.10 | -11.90 | 0.1579 | -1.88 | 100.00% valid | 88.10% valid | 78.59 $\to$ 76.71 (-1.88 pts) |
-| **M6_RATE_OUTLIERS** | Q3_OUTLIER_SHARE | 64.16 | 13.65 | -50.51 | 0.2105 | -10.63 | 5.38% outliers | 12.95% outliers | 78.59 $\to$ 51.38 (-27.21 pts) |
+| **M1_ZERO_RATES** | Q2_ZERO_RATE | 100.00 | 0.00 | -100.00 | 0.0500 | -5.00 | 0.00% zeros | 10.00% zeros | 83.86 $\to$ 78.83 (-5.03 pts) |
+| **M2_DUPLICATE_ROWS** | Q5_DUPLICATE_RATIO | 20.47 | 13.65 | -6.82 | 0.1000 | -0.68 | 79.53% dups | 86.35% dups | 83.86 $\to$ 83.14 (-0.72 pts) |
+| **M3_EXPIRED_DATES** | Q6_STALENESS | 70.00 | 60.00 | -10.00 | 0.0500 | -0.50 | `NOT_EVALUABLE` | 20.00% expired | 83.86 $\to$ 83.36 (-0.50 pts) |
+| **M4_CONFLICTING_RATES**| Q8_INTERNAL_CONSISTENCY | 98.29 | 88.61 | -9.68 | 0.2000 | -1.94 | 0.86% conflicts | 5.70% conflicts | 83.86 $\to$ 82.03 (-1.83 pts) |
+| **M5_INVALID_NPIS** | Q1_NPI_LUHN | 100.00 | 80.03 | -19.97 | 0.1500 | -3.00 | 100.00% valid | 80.03% valid | 83.86 $\to$ 80.87 (-2.99 pts) |
+| **M6_RATE_OUTLIERS** | Q3_OUTLIER_SHARE | 68.31 | 49.15 | -19.16 | 0.2000 | -3.83 | 4.75% outliers | 7.63% outliers | 83.86 $\to$ 80.03 (-3.83 pts) |
 
 ### Key Findings from Mutation Testing:
-1. **Monotonic Staleness (M3)**: Injecting 20% expired contracts immediately activates Q6, dropping its score from 70.0 to 60.0 ($100 - 20 \times 2 = 60.0$), confirming monotonic degradation.
-2. **Robust Outlier Sensitivity (M6)**: Uniform 10% injection across all billing codes raises the measured MAD outlier share from 5.38% to 12.95% (rose by 7.58%, closely matching the 10% injected rate), proving high sensitivity.
-3. **Reconciliation Integrity**: All 7 metrics before and after are recorded in `data/output/mutation_test_report.csv`. Secondary effects of setting rates to $0.00 in M1 or multiplying rates in M6 are fully accounted for in the multi-metric movements.
+1. **Decoupled Outlier vs Conflict Mutations (M4 & M6)**: In M6, scaling 10% of finest keys uniformly by 10x drops Q3 outlier score by -19.16 points with **zero cross-metric movement on Q8** (weighted delta ties out exactly to overall drop of -3.83 pts). In M4, perturbing rates by +1.0% on multi-row finest keys drops Q8 by -9.68 points without triggering the MAD outlier detector (Q3 delta is 0.00).
+2. **Monotonic Staleness (M3)**: Injecting 20% expired contracts drops Q6 from 70.0 to 60.0 ($100 - 20 \times 2 = 60.0$). At fixed canonical weight 0.05, weighted delta ties out exactly to overall drop of -0.50 pts with zero movement across all other 7 metrics.
+3. **Exact Luhn Tracking (M5)**: Corrupting exactly 20% of unique NPI check digits drops Q1 from 100.00% to 80.03% (delta -19.97 pts), producing a weighted delta of $-19.97 \times 0.15 = -3.00$ pts (overall drop -2.99 pts), verifying perfect identifier checksum isolation.
+4. **Reconciliation Integrity**: All metrics before and after are recorded in `data/output/mutation_test_report.csv`. Baseline sample score (83.86) reflects 50,000-row sample baseline with canonical weights ($0.15, 0.05, 0.20, 0.10, 0.10, 0.05, 0.15, 0.20$). Full-file production score with audited within-block duplicates (0.76%) and currency (80.0 pts) is 91.14 (Quality Grade A) across all 8 canonical metrics, yielding an 82.21 Combined Score (Grade B).
+

@@ -33,13 +33,15 @@ class RateStreamProfiler:
         self.duckdb_path = self.interim_dir / "provider_references.duckdb"
 
     def get_rate_file_path(self) -> Path:
-        """Find the Health Net California rate file."""
-        candidates = list(self.raw_dir.glob("*healthnet-ca*.json"))
+        """Find the target rate file dynamically from config pattern or fallback."""
+        pat = self.config.scope.get("rate_file_pattern", "*healthnet-ca*.json") if isinstance(self.config.scope, dict) else "*healthnet-ca*.json"
+        candidates = list(self.raw_dir.glob(pat))
         if not candidates:
-            # Fallback to any in-network json
+            candidates = list(self.raw_dir.glob("*healthnet-ca*.json"))
+        if not candidates:
             candidates = list(self.raw_dir.glob("*in-network*.json"))
         if not candidates:
-            raise FileNotFoundError(f"Health Net CA rate file not found in {self.raw_dir}")
+            raise FileNotFoundError(f"Rate file not found in {self.raw_dir}")
         return candidates[0]
 
     def index_provider_references(self, rate_file: Path) -> Dict[str, Any]:
@@ -58,9 +60,20 @@ class RateStreamProfiler:
                 tin_type VARCHAR,
                 tin_value VARCHAR,
                 business_name VARCHAR,
+                ppo_evidence_tier VARCHAR,
                 npis BIGINT[]
             )
         """)
+
+        def classify_group_evidence_tier(b_name: str) -> str:
+            b_upper = (b_name or "").upper()
+            if "AMBETTER" in b_upper:
+                return "EXCLUDED_AMBETTER_MARKET"
+            if "HMO" in b_upper and "PPO" not in b_upper:
+                return "EXCLUDED_HMO_DIRECT"
+            if "PPO" in b_upper:
+                return "T1_explicit_ppo"
+            return "T2_shared_commercial"
 
         all_keys_seen = set()
         tin_types = Counter()
@@ -92,20 +105,21 @@ class RateStreamProfiler:
                     b_name = tin_info.get("business_name", "")
                     tin_types[t_type] += 1
 
+                    tier = classify_group_evidence_tier(b_name)
                     npis = pg.get("npi", [])
                     npi_counts_per_group.append(len(npis))
-                    records_to_insert.append((pg_id, t_type, t_val, b_name, npis))
+                    records_to_insert.append((pg_id, t_type, t_val, b_name, tier, npis))
 
                     if len(records_to_insert) >= batch_size:
                         con.executemany(
-                            "INSERT INTO provider_references VALUES (?, ?, ?, ?, ?)",
+                            "INSERT INTO provider_references VALUES (?, ?, ?, ?, ?, ?)",
                             records_to_insert,
                         )
                         records_to_insert = []
 
         if records_to_insert:
             con.executemany(
-                "INSERT INTO provider_references VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO provider_references VALUES (?, ?, ?, ?, ?, ?)",
                 records_to_insert,
             )
 

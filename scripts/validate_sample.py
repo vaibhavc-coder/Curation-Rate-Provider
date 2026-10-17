@@ -55,20 +55,51 @@ def validate_production_outputs() -> bool:
         return False
     print("[PASS] Parquet and CSV row counts match exactly.")
 
-    # 4. Excel Re-read Count
-    print("3. Validating Excel Re-read Count...")
+    # 4. Problem Statement Grain CSV Check
+    ps_csv_path = output_dir / "final_rates_ps_grain.csv"
+    if not ps_csv_path.exists():
+        print(f"[FAIL] Missing Problem Statement grain CSV: {ps_csv_path}")
+        return False
+    df_ps_csv = pl.read_csv(ps_csv_path)
+    print(f"3. Problem Statement Grain CSV: {df_ps_csv.height:,} rows across {len(df_ps_csv.columns)} columns")
+    ps_cols_expected = ["NPI", "TIN", "Address", "Billing Code", "Specialty", "Rate"]
+    if df_ps_csv.columns != ps_cols_expected:
+        print(f"[FAIL] PS CSV columns mismatch: {df_ps_csv.columns} != {ps_cols_expected}")
+        return False
+    if df_ps_csv.filter(pl.col("Rate").is_null()).height > 0:
+        print("[FAIL] Found null rates in PS grain CSV!")
+        return False
+
+    # STRICT ASSERTION: 4-column key uniqueness (NPI, TIN, Address, Billing Code)
+    n_ps_unique = df_ps_csv.unique(subset=["NPI", "TIN", "Address", "Billing Code"]).height
+    if n_ps_unique != df_ps_csv.height:
+        print(f"[FAIL] PS CSV has duplicate 4-column keys: {df_ps_csv.height - n_ps_unique:,} duplicate rows!")
+        return False
+    print(f"[PASS] Problem Statement Grain CSV strictly asserts 4-column key uniqueness: {n_ps_unique:,} / {df_ps_csv.height:,} unique rows.")
+
+    # 5. Excel Re-read Count
+    print("4. Validating Multi-Sheet Excel Re-read Count...")
     wb = openpyxl.load_workbook(excel_path, read_only=True)
-    if "Curated_Rates" not in wb.sheetnames or "Notes" not in wb.sheetnames:
-        print("[FAIL] Missing required sheets in Excel workbook!")
-        return False
-    ws = wb["Curated_Rates"]
-    excel_rows = ws.max_row - 1  # Exclude header
+    required_sheets = ["Final_Rates_PS_Grain", "Lossless_Curated_Rates", "Notes"]
+    for s_name in required_sheets:
+        if s_name not in wb.sheetnames:
+            print(f"[FAIL] Missing required sheet '{s_name}' in Excel workbook! Found: {wb.sheetnames}")
+            return False
+    ws_ps = wb["Final_Rates_PS_Grain"]
+    excel_ps_rows = ws_ps.max_row - 1
+    ws_lossless = wb["Lossless_Curated_Rates"]
+    excel_lossless_rows = ws_lossless.max_row - 1
     wb.close()
-    print(f"   Excel Sheet 'Curated_Rates' Data Rows: {excel_rows:,}")
-    if excel_rows != n_rows:
-        print(f"[FAIL] Excel row count ({excel_rows:,}) does not equal Parquet count ({n_rows:,})!")
+    print(f"   Excel Sheet 'Final_Rates_PS_Grain' Data Rows: {excel_ps_rows:,}")
+    print(f"   Excel Sheet 'Lossless_Curated_Rates' Data Rows: {excel_lossless_rows:,}")
+    if excel_ps_rows != df_ps_csv.height:
+        print(f"[FAIL] Excel Sheet 1 rows ({excel_ps_rows:,}) does not equal PS CSV rows ({df_ps_csv.height:,})!")
         return False
-    print("[PASS] Excel re-read row count matches Parquet exactly.")
+    if excel_lossless_rows != n_rows:
+        print(f"[FAIL] Excel Sheet 2 rows ({excel_lossless_rows:,}) does not equal lossless count ({n_rows:,})!")
+        return False
+    print(f"[PASS] Excel Sheet 1 matches PS Grain CSV ({excel_ps_rows:,}) and Sheet 2 matches Lossless Parquet ({excel_lossless_rows:,}).")
+
 
     # 5. Column Order Verification
     print("\n4. Validating Column Ordering...")
@@ -83,7 +114,7 @@ def validate_production_outputs() -> bool:
 
     # 6. Duplication Check on Grain
     print("\n5. Checking Grain Uniqueness...")
-    grain = ["NPI", "TIN", "Address", "Billing Code", "billing_class", "billing_code_type"]
+    grain = ["NPI", "TIN", "Address", "Billing Code", "billing_class", "billing_code_type", "billing_code_description"]
     n_unique_grain = df_parquet.unique(subset=grain).height
     dup_grain = n_rows - n_unique_grain
     print(f"   Grain duplicates: {dup_grain}")
@@ -92,19 +123,37 @@ def validate_production_outputs() -> bool:
         return False
     print("[PASS] Zero grain duplicates.")
 
-    # 7. Coverage of Curated Keys
+    # 7. Coverage of Curated Keys (matching summary.json)
     print("\n6. Checking Curated Rates Key Coverage...")
     df_rates = pl.read_parquet(rates_path)
-    curated_keys = df_rates.select(["tin", "billing_code", "billing_class", "billing_code_type"]).unique()
-    final_keys = df_parquet.select(["TIN", "Billing Code", "billing_class", "billing_code_type"]).rename({
-        "TIN": "tin", "Billing Code": "billing_code"
-    }).unique()
-    missing_keys = curated_keys.join(final_keys, on=["tin", "billing_code", "billing_class", "billing_code_type"], how="anti")
-    print(f"   Curated keys present in final table: {final_keys.height:,} / {curated_keys.height:,}")
-    if missing_keys.height > 0:
-        print(f"[FAIL] {missing_keys.height} curated rate keys missing from final output!")
+    n_curated_keys = df_rates.height
+    primary_final = df_parquet.filter(pl.col("is_primary_address") == True)
+    n_primary_keys = primary_final.height
+
+    print(f"   Extracted curated rate keys: {n_curated_keys:,}")
+    print(f"   Primary address rate keys in final deliverable: {n_primary_keys:,}")
+
+    # Check against summary.json if it exists
+    summary_path = output_dir / "summary.json"
+    if summary_path.exists():
+        import json
+        with open(summary_path) as f:
+            summary_data = json.load(f)
+        sum_keys = summary_data.get("phase3_and_4_rate_grading", {}).get("curated_rate_keys_resolved")
+        sum_rows = summary_data.get("phase6_production_deliverable", {}).get("total_curated_rates_and_addresses_rows")
+        print(f"   Summary.json curated keys: {sum_keys:,} | Final rows: {sum_rows:,}")
+        if sum_keys != n_curated_keys:
+            print(f"[FAIL] Key count mismatch: summary.json ({sum_keys}) != extracted ({n_curated_keys})!")
+            return False
+        if sum_rows != n_rows:
+            print(f"[FAIL] Final rows mismatch: summary.json ({sum_rows}) != deliverable ({n_rows})!")
+            return False
+        print("[PASS] validate_sample.py and summary.json key and row counts tie out 100%.")
+
+    if n_curated_keys != n_primary_keys:
+        print(f"[FAIL] Curated rate keys ({n_curated_keys:,}) != primary address rows ({n_primary_keys:,})!")
         return False
-    print("[PASS] Every single curated rate key appears in the final deliverable.")
+    print(f"[PASS] All {n_curated_keys:,} curated rate keys appear in final deliverable (1:1 primary address coverage).")
 
     # 8. Null Counts Summary
     print("\n7. Column Null Counts Profile:")

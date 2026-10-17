@@ -41,7 +41,10 @@ class RateExtractor:
         self.duckdb_path = self.interim_dir / "provider_references.duckdb"
 
     def get_rate_file_path(self) -> Path:
-        candidates = list(self.raw_dir.glob("*healthnet-ca*.json"))
+        pat = self.config.scope.get("rate_file_pattern", "*healthnet-ca*.json") if isinstance(self.config.scope, dict) else "*healthnet-ca*.json"
+        candidates = list(self.raw_dir.glob(pat))
+        if not candidates:
+            candidates = list(self.raw_dir.glob("*healthnet-ca*.json"))
         if not candidates:
             candidates = list(self.raw_dir.glob("*in-network*.json"))
         if not candidates:
@@ -180,9 +183,9 @@ class RateExtractor:
 
         # ---------------------------------------------------------------------
         # 2. TIE-BREAKING PRIOR TO AGGREGATION
-        # Defined on grain: npi, tin, billing_code, billing_class, billing_code_type
+        # Defined on grain: npi, tin, billing_code, billing_class, billing_code_type, additional_information
         # ---------------------------------------------------------------------
-        grain_keys = ["npi", "tin", "billing_code", "billing_class", "billing_code_type"]
+        grain_keys = ["npi", "tin", "billing_code", "billing_class", "billing_code_type", "additional_information"]
 
         # Step 2A: Prefer base rate with NO modifier over modifier rates (26, TC, 95, etc.)
         has_base_modifier = (
@@ -287,7 +290,7 @@ class RateExtractor:
                 pl.col("business_name").map_elements(assign_review_flag, return_dtype=pl.String).alias("review_flag"),
             )
             .with_columns(
-                ((pl.col("rate_spread_ratio") > 3.0) | (pl.col("n_source_prices") > 100)).alias("spread_flag")
+                (pl.col("rate_spread_ratio") > 3.0).alias("spread_flag")
             )
         )
 
@@ -352,6 +355,7 @@ class RateExtractor:
             k_code = s_row["billing_code"]
             k_class = s_row["billing_class"]
             k_type = s_row["billing_code_type"]
+            k_add_info = s_row.get("additional_information", "NONE")
 
             # Filter raw records feeding this key
             raw_feed = df_raw.filter(
@@ -360,6 +364,7 @@ class RateExtractor:
                 & (pl.col("billing_code") == k_code)
                 & (pl.col("billing_class") == k_class)
                 & (pl.col("billing_code_type") == k_type)
+                & (pl.col("additional_information") == k_add_info)
                 & (pl.col("negotiation_arrangement") != "capitation")
                 & (pl.col("ppo_evidence_tier").is_in(["T1_explicit_ppo", "T2_shared_commercial"]))
             )
@@ -382,6 +387,7 @@ class RateExtractor:
                 "npi": s_row["npi"],
                 "billing_code": s_row["billing_code"],
                 "billing_class": s_row["billing_class"],
+                "additional_information": k_add_info,
                 "ppo_evidence_tier": s_row["ppo_evidence_tier"],
                 "n_source_prices": s_row["n_source_prices"],
                 "selection_rule": s_row["selection_rule"],

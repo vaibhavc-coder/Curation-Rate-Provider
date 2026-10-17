@@ -11,12 +11,18 @@ def test_required_column_ordering():
         "NPI", "TIN", "Address", "Billing Code", "Specialty", "Rate",
         "address_confidence", "address_status", "source_file", "file_quality_score",
         "billing_code_type", "billing_class", "npi_type", "npi_status", "tin_canonical_name",
-        "ppo_evidence_tier", "rate_min", "rate_max", "n_source_prices", "rate_reliability",
-        "spread_flag", "review_flag", "address_rank", "is_primary_address", "status_basis",
-        "specialty_plausible", "class_npi_type_match"
+        "network_label", "ppo_evidence_tier", "network_participation_ppo",
+        "rate_min", "rate_max", "n_source_prices",
+        "negotiated_type", "negotiation_arrangement", "rate_basis",
+        "rate_reliability", "spread_flag", "outlier_flag", "review_flag",
+        "address_rank", "is_primary_address", "status_basis",
+        "tin_corroboration_eligible", "specialty_plausible", "class_npi_type_match",
+        "address_line1", "address_line2", "city", "state", "zip5",
+        "billing_code_description", "modifier_used", "service_code_used"
     ]
     assert FinalOutputGenerator.REQUIRED_COLUMNS == expected_order
-    assert len(FinalOutputGenerator.REQUIRED_COLUMNS) == 27
+    assert len(FinalOutputGenerator.REQUIRED_COLUMNS) == 42
+
 
 
 def test_format_address_string_handling():
@@ -62,3 +68,48 @@ def test_exactly_one_primary_address_per_npi_tin():
         prim_counts = prim_df.group_by(["npi", "tin"]).len()
         assert prim_counts["len"].max() == 1
         assert prim_counts["len"].min() == 1
+
+
+def test_problem_statement_grain_uniqueness():
+    """Assert that final_rates_ps_grain.csv has 100% unique 4-column keys."""
+    cfg = load_config()
+    ps_csv = cfg.output_dir / "final_rates_ps_grain.csv"
+    if ps_csv.exists():
+        df_ps = pl.read_csv(ps_csv)
+        assert df_ps.columns == ["NPI", "TIN", "Address", "Billing Code", "Specialty", "Rate"]
+        n_unique = df_ps.unique(subset=["NPI", "TIN", "Address", "Billing Code"]).height
+        assert n_unique == df_ps.height, f"Found {df_ps.height - n_unique} duplicate 4-column keys!"
+
+
+def test_revenue_code_descriptions_no_cpt_bleed():
+    """Assert that no Revenue Code row carries a CPT-style procedure description."""
+    cfg = load_config()
+    final_parquet = cfg.output_dir / "final_curated_rates.parquet"
+    if final_parquet.exists():
+        df = pl.read_parquet(final_parquet)
+        rc_rows = df.filter(pl.col("billing_code_type") == "RC")
+        assert rc_rows.height > 0
+
+        # Specifically check RC 300: must be 'Laboratory - General clinical assay', never 'SEX HORMONE BINDING GLOBULIN'
+        rc_300 = rc_rows.filter(pl.col("Billing Code") == "300")
+        if rc_300.height > 0:
+            for desc in rc_300["billing_code_description"].to_list():
+                assert "SEX HORMONE" not in desc
+                assert "Laboratory - General clinical assay" in desc
+
+        # Assert no RC row contains inappropriate CPT bleed
+        forbidden_cpt_substrings = ["SEX HORMONE", "COLONOSCOPY, FLEXIBLE", "ASSAY OF ESTRADIOL"]
+        for row in rc_rows.iter_rows(named=True):
+            desc = row["billing_code_description"]
+            for bad in forbidden_cpt_substrings:
+                assert bad not in desc, f"RC {row['Billing Code']} contains CPT bleed: {desc}"
+
+
+def test_network_participation_ppo_unknown():
+    """Assert that network_participation_ppo is Unknown for all rows."""
+    cfg = load_config()
+    final_parquet = cfg.output_dir / "final_curated_rates.parquet"
+    if final_parquet.exists():
+        df = pl.read_parquet(final_parquet)
+        assert (df["network_participation_ppo"] == "Unknown").all()
+

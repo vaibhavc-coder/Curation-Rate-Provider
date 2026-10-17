@@ -6,6 +6,14 @@ project:
   version: "1.0.0"
   description: "Production-grade PTD Curation Pipeline for Centene Provider Rates"
 
+system:
+  memory_limit_mb: 2048
+  duckdb_memory_limit: "2GB"
+  polars_streaming: true
+  parquet_row_group_size: 50000
+  xlsx_constant_memory: true
+
+
 original_input_sources:
   healthnet_index: "/home/srinivas/Downloads/2026-09-30_healthnet_index.json"
   ambetter_index: "/home/srinivas/Downloads/2026-09-28_ambetter_index.json"
