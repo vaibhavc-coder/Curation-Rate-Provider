@@ -63,6 +63,7 @@ def trace_and_verify_sample_rows() -> dict:
         row_tin = str(row["tin"])
         b_class = row["billing_class"]
         expected_rate = float(row["rate_selected"])
+        row_add_info = str(row.get("additional_information") or "NONE").strip()
 
         item = raw_items_by_index.get(item_idx)
         if not item:
@@ -91,6 +92,9 @@ def trace_and_verify_sample_rows() -> dict:
                 for np in nr.get("negotiated_prices", []):
                     r_val = np.get("negotiated_rate")
                     if r_val is not None and r_val > 0:
+                        add_info = str(np.get("additional_information") or "NONE").strip()
+                        if add_info != row_add_info:
+                            continue
                         sc_list = np.get("service_code", ["NONE"])
                         sc = sc_list[0] if sc_list else "NONE"
                         mod_list = np.get("billing_code_modifier", [])

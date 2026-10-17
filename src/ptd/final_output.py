@@ -468,8 +468,11 @@ class FinalOutputGenerator:
         # Collapses to exactly one row per (NPI, TIN, Address, Billing Code) using deterministic median aggregation
         ps_cols = ["NPI", "TIN", "Address", "Billing Code", "Specialty", "Rate"]
         ps_df = (
-            final_df.group_by(["NPI", "TIN", "Address", "Billing Code", "Specialty"])
-            .agg(pl.col("Rate").median().round(2).alias("Rate"))
+            final_df.group_by(["NPI", "TIN", "Address", "Billing Code"])
+            .agg([
+                pl.col("Specialty").first().alias("Specialty"),
+                pl.col("Rate").median().round(2).alias("Rate"),
+            ])
             .select(ps_cols)
             .sort(["TIN", "Billing Code", "Address", "NPI"], nulls_last=True)
         )
