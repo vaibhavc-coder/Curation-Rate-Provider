@@ -25,7 +25,23 @@ Evaluated across all **1,511,720 raw expanded price records** in `raw_price_audi
 | **Q7_SCHEMA_VALIDITY**| Schema Completeness | 0.15 | 100.00% mandatory TiC fields populated | 100.00 | 15.00 | Mandatory presence of `tin`, `billing_code`, `negotiated_rate`, `class` |
 | **Q8_INTERNAL_CONSISTENCY**| Internal Rate Consistency | 0.20 | 3.09% multi-rate finest keys | 93.82 | 18.76 | Conflict rate on finest key: $\max(0, 100 - \text{conflict\_pct} \times 2)$ |
 | **DESCR_STRUCT_MULT**| Structural Multiplicity | 0.00 | 97.90% structural cross-reference fan-out | 2.10 | 0.00 | Descriptive volume of contract prices collapsed during tie-breaking (1,480,048 duplicates) |
-| **TOTALS** | | **1.0000** | | | **91.14** | **Quality Score = 91.14 (Grade A)** |
+| **METHOD_V1_BASELINE** | Method v1 Score (Checkpoints D/E) | 1.0000 | Structural fan-out scored in Q5 | 81.50 | 81.50 | Historical baseline before within-block duplicate isolation |
+| **TOTALS (METHOD V2)** | | **1.0000** | Within-block duplicate isolation | | **91.14** | **Quality Score = 91.14 (Grade A)** |
+
+### +9.64 Point Score Bridge & Sensitivity Analysis (Method v1 $\to$ Method v2)
+- **Method v1 Baseline (Checkpoints D/E)**: **81.50** (Grade B)
+- **Q5 Duplication Realignment**: **+9.71 points**
+  - Isolating true within-block rate duplicates (0.76%, 11,432 rows $\to$ 99.24 pts) from structural cross-reference fan-out (reported descriptively) added $+9.71$ weighted points ($(99.24 - 2.10) \times 0.10$).
+- **Q6 Staleness & Currency Calibration**: **+0.50 points**
+  - Moving from an arbitrary 70.0 baseline to the documented 50/50 blend (100 pts publication freshness + 70 pts evergreen contract penalty = 80.0 pts) added $+0.50$ weighted points ($(80.0 - 70.0) \times 0.05$).
+- **Reconciliation Adjustments (Q1, Q3, Q8)**: **-0.57 points**
+- **Method v2 Production Score**: $\mathbf{81.50 + 9.71 + 0.50 - 0.57 = 91.14}$ (Grade A).
+
+**Sensitivity of Final Score to Q6 Blend Assumption**:
+- *100% Publication Freshness (100 pts)*: Quality = 92.14 (+1.00 pt), Combined = 82.81 (Grade B).
+- *50/50 Documented Blend (80 pts)*: Quality = 91.14, Combined = 82.21 (Grade B).
+- *100% Evergreen Penalty (70 pts)*: Quality = 90.64 (-0.50 pt), Combined = 81.91 (Grade B).
+The file remains solidly Grade B across all blend assumptions.
 
 ---
 

@@ -74,9 +74,10 @@ make run
 ## 2. Deliverables & Outputs
 
 All generated datasets and governance reports are written to `data/output/` and `docs/`:
-- `data/output/final_curated_rates.parquet`: Master curated dataset (69,144 multi-site practicing rows / 27,559 unique rate keys, Snappy compressed).
-- `data/output/final_curated_rates.csv`: Flat RFC 4180 compliant CSV format.
-- `data/output/final_curated_rates.xlsx`: High-performance Excel deliverable with `Curated_Rates` and `Notes` tabs (streaming `xlsxwriter`, 93.41% headroom under Excel limit).
+- `data/output/final_rates_ps_grain.csv`: Exact Problem Statement grain CSV (**48,006 unique rows** on `(NPI, TIN, Address, Billing Code)` collapsed via deterministic median rate aggregation; zero duplicate keys).
+- `data/output/final_curated_rates.xlsx`: High-performance multi-sheet Excel workbook (Sheet 1: `Final_Rates_PS_Grain` with 48,006 rows; Sheet 2: `Lossless_Curated_Rates` with 69,144 rows across 42 columns; Sheet 3: `Notes`).
+- `data/output/final_curated_rates.parquet`: Master lossless curated dataset (69,144 multi-site practicing rows / 27,559 unique contract keys, Snappy compressed).
+- `data/output/final_curated_rates.csv`: Lossless RFC 4180 compliant flat CSV format.
 - `data/output/summary.json` & `data/output/summary.xlsx`: Pipeline run metrics, record reconciliation, file quality scores, and verification shares.
 - `docs/LOGIC.md`: Comprehensive engineering design document covering all 12 architectural decisions, empirical findings, and limitations.
 - `docs/FILE_QUALITY_METRICS.md`: Complete quality audit and 6-scenario mutation testing scorecard.

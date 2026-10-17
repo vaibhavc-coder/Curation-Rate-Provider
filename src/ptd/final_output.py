@@ -428,7 +428,7 @@ class FinalOutputGenerator:
             final_df.group_by(["NPI", "TIN", "Address", "Billing Code", "Specialty"])
             .agg(pl.col("Rate").median().round(2).alias("Rate"))
             .select(ps_cols)
-            .sort(["TIN", "Billing Code", "Address"])
+            .sort(["TIN", "Billing Code", "Address", "NPI"], nulls_last=True)
         )
         ps_csv_out = self.output_dir / "final_rates_ps_grain.csv"
         ps_df.write_csv(ps_csv_out)

@@ -1,15 +1,24 @@
 # PTD Pipeline Logic and Methodology Documentation
 
+> [!IMPORTANT]
+> **Network Reality Notice: Shared Commercial Fee Schedule**:
+> The raw TiC in-network rate file `2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json` has `network_name: []` completely empty across all 2,825 provider references. Centene publishes a unified commercial group fee schedule shared across PPO, HMO, and POS plans. The rate file itself cannot isolate PPO from HMO or EOA plans without external plan directory links. Network participation is marked `"Unknown"` for all rows, and this deliverable represents Centene's **California Commercial Group Master Fee Schedule**.
+> Contract attribution tiers are documented honestly:
+> - **`T2_shared_commercial` (27,377 curated keys / 68,817 lossless rows)**: Commercial master fee schedule shared across PPO and HMO contracts without explicit network markers.
+> - **`T1_explicit_ppo` / `name_hint_ppo` (182 curated keys / 327 lossless rows)**: Provider groups whose business name string in the raw file contains the keyword `"PPO"` (e.g. `"PPO: Sacramento County"`).
+
 ## 1. Executive Summary & Problem Scope
 
 This document details the exact business, clinical, and data engineering logic for curating Centene's Price Transparency Data (PTD) under the CMS Transparency in Coverage (TiC v2.0.0) final rule.
 
 ### Target Scope
-- **Payer**: Centene Corporation
+- **Payer**: Centene Corporation (Health Net California)
 - **Market**: Commercial Group (employer-sponsored)
 - **State**: California (CA)
-- **Network**: PPO (Preferred Provider Organization)
+- **Network**: Commercial Master Schedule (Covering PPO, HMO, and POS plans)
 - **Providers**: Type 1 (Individual / Rendering) and Type 2 (Organization / Group Practice) NPIs
+- **Problem-Statement Grain**: Exactly **48,006 unique rows** on `(NPI, TIN, Address, Billing Code)` collapsed via deterministic median rate aggregation.
+- **Lossless Relational Schedule**: Exactly **69,144 rows** across 42 relational governance columns preserving multi-site practice locations.
 
 ---
 
