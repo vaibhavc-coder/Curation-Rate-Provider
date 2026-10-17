@@ -7,23 +7,23 @@ The Centene Price Transparency Data (PTD) pipeline is engineered for linear scal
 Evaluated on:
 - **Environment**: Linux x86_64, Python 3.14.6 Virtualenv
 - **Hardware Profile**: 8-core CPU, 16 GB System RAM, NVMe Storage
-- **Memory Budget**: Strictly bounded to **< 2.0 GB internal RSS** via DuckDB `memory_limit = '2GB'`, streaming Polars lazy evaluation, chunked Parquet writes, and `xlsxwriter` constant memory streaming.
+- **Memory Governance**: Evaluated with `/usr/bin/time -v` across all phases. Streaming ingestion is bounded to <250 MB via PyArrow chunked Parquet writing and DuckDB index limits. Peak RSS across the entire end-to-end pipeline reaches 4.58 GB during Phase 4 full-table Polars collision resolution over 1,511,720 raw records.
 
 ---
 
 ## 2. Phase-by-Phase Throughput Benchmarks
 
-| Pipeline Stage | Processing Scope | Elapsed Time (s) | Throughput Rate | Delta RAM | Peak RSS |
+| Pipeline Stage | Processing Scope | Elapsed Time (s) | Throughput Rate | Delta RAM | Peak RSS (`/usr/bin/time -v`) |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **Phase 1: Index Parsing** | 4 Index files (3,275 raw plan entries, 14.8 MB JSON) | 0.04 s | **81,875 plans/sec** (370 MB/sec) | +49.0 MB | 165 MB |
 | **Phase 2: PPO Classification** | 1,312 California plans classified | 0.06 s | **21,867 plans/sec** | +12.5 MB | 177 MB |
-| **Phase 3: Rate Profiling** | DuckDB indexing (2,825 refs) + streaming 1,717 in-network items | 14.80 s | **302,477 prices/sec** (113 items/sec) | +76.5 MB | 251 MB |
-| **Phase 4: Rate Extraction & Grading** | 1,511,720 raw expanded prices -> 27,559 curated keys | 17.94 s | **107,980 prices/sec** (1,536 keys/sec) | +1,364.1 MB | 1,368 MB |
-| **Phase 5: Multi-Source Linkage** | 3,694 NPIs streamed from NPPES V.2 (1.1 GB zip) + CMS DAC | 56.88 s | **64.9 NPIs/sec** (40.80s zip stream) | -969.2 MB (GC) | 474 MB |
-| **Phase 6: Deliverable Exports** | 48,006 PS rows + 69,144 lossless rows x 42 cols (Parquet, CSV, Excel) | 11.18 s | **6,184 rows/sec** (constant memory) | +35.4 MB | 676 MB |
-| **C7: Cost-Effectiveness** | 27,559 curated contract keys across 19 regions | 1.23 s | **22,405 keys/sec** | +124.7 MB | 799 MB |
-| **Phase 7: Governance Summary** | Recompile JSON and Excel summary reports | 0.15 s | Near-instantaneous | +5.0 MB | 804 MB |
-| **TOTAL END-TO-END PIPELINE** | **Full Raw Stream to Production Deliverables** | **~102.28 s** | **14,780 raw prices/sec** | — | **1,368 MB (< 2.0 GB)** |
+| **Phase 3: Rate Profiling** | DuckDB indexing (2,825 refs) + streaming 1,717 in-network items | 15.06 s | **302,477 prices/sec** (113 items/sec) | +87.9 MB | 232 MB |
+| **Phase 4: Rate Extraction & Grading** | 1,511,720 raw expanded prices -> 27,559 curated keys | 17.60 s | **107,980 prices/sec** (1,536 keys/sec) | +1,409.3 MB | 4,585 MB (Polars tie-break) |
+| **Phase 5: Multi-Source Linkage** | 3,694 NPIs streamed from NPPES V.2 (1.1 GB zip) + CMS DAC | 54.08 s | **68.3 NPIs/sec** (40.90s zip stream) | +214.1 MB | 356 MB |
+| **Phase 6: Deliverable Exports** | 48,006 PS rows + 69,144 lossless rows x 45 cols (Parquet, CSV, Excel) | 12.11 s | **5,709 rows/sec** (constant memory) | +217.8 MB | 218 MB |
+| **C7: Cost-Effectiveness** | 27,559 curated contract keys across 19 regions | 1.27 s | **21,699 keys/sec** | +290.5 MB | 290 MB |
+| **Phase 7: Governance Summary** | Recompile JSON and Excel summary reports | 0.13 s | Near-instantaneous | +155.7 MB | 156 MB |
+| **TOTAL END-TO-END PIPELINE** | **Full Raw Stream to Production Deliverables** | **~100.35 s** | **15,064 raw prices/sec** | — | **5,198 MB (5.19 GB peak)** |
 
 ---
 

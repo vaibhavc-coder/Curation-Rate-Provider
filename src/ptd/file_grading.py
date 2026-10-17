@@ -366,10 +366,10 @@ class FileGrader:
         else:
             letter_grade = "F"
 
-        t1_raw = df_raw.filter(pl.col("ppo_evidence_tier") == "T1_explicit_ppo")
+        t1_raw = df_raw.filter(pl.col("ppo_evidence_tier") == "T1_name_hint_ppo")
         t2_raw = df_raw.filter(pl.col("ppo_evidence_tier") == "T2_shared_commercial")
 
-        t1_quality = self.evaluate_quality_metrics(t1_raw, tier_name="T1_explicit_ppo")
+        t1_quality = self.evaluate_quality_metrics(t1_raw, tier_name="T1_name_hint_ppo")
         t2_quality = self.evaluate_quality_metrics(t2_raw, tier_name="T2_shared_commercial")
 
         scores_summary = [
@@ -382,7 +382,7 @@ class FileGrader:
                 "letter_grade": letter_grade,
             },
             {
-                "tier": "T1_explicit_ppo",
+                "tier": "T1_name_hint_ppo",
                 "quality_subscore": t1_quality["quality_score"],
                 "quality_subscore_with_staleness": t1_quality["quality_score_with_staleness"],
                 "coverage_subscore": "N/A (Quality-only tier evaluation)",

@@ -2,7 +2,7 @@
 **Payer**: Centene Management Company LLC / Health Net California  
 **Market & Network**: California Commercial Master Fee Schedule (Covering PPO, HMO, and POS Plans)  
 **Presenter**: Senior Data Engineer  
-**Duration**: Exactly 4 Minutes 45 Seconds (under 5:00 budget)  
+**Duration**: Estimated reading time: ~4 minutes 30 seconds (to be timed by presenter)  
 
 ---
 
@@ -28,20 +28,20 @@ Our explainable PPO classifier evaluated plan names using word-boundary regexes,
 - **127 Exclusive Open Access (EOA) plans** isolated.
 
 Now, here is the honest reality that ordinary pipelines hide:
-In Centene’s raw rate file, `network_name` is **100% empty across all 2,825 provider references**. Centene publishes one shared commercial fee schedule across PPO, HMO, and EOA plans. The file itself cannot isolate PPO from HMO rates. We therefore truthfully label the deliverable `CA_COMMERCIAL_GROUP_SHARED_SCHEDULE`, set `network_participation_ppo` to 'Unknown' across all rows, and document contract attribution under tiers T1 (provider name keyword hint) and T2 (shared commercial schedule)."
+In Centene’s raw rate file, `network_name` is **100% empty across all 2,825 provider references**. Centene publishes one shared commercial fee schedule across PPO, HMO, and EOA plans. The file itself cannot isolate PPO from HMO rates. We therefore truthfully label the deliverable `CA_COMMERCIAL_GROUP_SHARED_SCHEDULE`, set `network_participation_ppo` to 'Unknown' across all rows, and document contract attribution under tiers T1 (administrative network bucket name hints) and T2 (shared commercial master schedule)."
 
 ---
 
 ### [01:30 - 02:30] Act 3: Streaming Rate Extraction, Real Quality Grading, & UB-04 Fix
 **Visual**: Terminal streaming output, raw duplicate breakdown, 8-metric quality scorecard.
 
-"We streamed Centene’s 670 MB rate file using `ijson` with the C-accelerated `yajl2_c` backend and DuckDB reference indexing, keeping memory strictly under 1.4 GB.
+"We streamed Centene’s 670 MB rate file using `ijson` with the C-accelerated `yajl2_c` backend and DuckDB reference indexing, keeping the streaming ingestion memory footprint strictly under 250 MB via chunked Parquet writing.
 
 Our profiling revealed that 97.90% of the 1.51 million raw prices are structural fan-out duplicates across provider reference groups, while true within-block duplicates are only 0.76% (11,432 rows).
 
 Our hierarchical tie-breaking engine resolved the file down to **27,559 curated rate keys**, disambiguating complex multi-rate lines such as Revenue Code 636 drug infusions via `additional_information`.
 
-Crucially, we resolved a critical schema bleed: Centene bundled CPT procedure names into hospital revenue code items. We integrated canonical CMS/NUBC UB-04 category mappings, ensuring Revenue Code 300 is correctly labeled as 'Laboratory - General clinical assay' rather than inheriting a bundled CPT test name.
+Crucially, we resolved a critical schema bleed: Centene bundled CPT procedure names into hospital revenue code items. We integrated canonical CMS/NUBC UB-04 category mappings, ensuring Revenue Code 300 is correctly labeled as 'Laboratory - General Classification' rather than inheriting a bundled CPT test name.
 
 We graded the raw stream across 8 TiC quality metrics:
 - Overall File Quality Score: **91.14 / 100.00** (Letter Grade A).
@@ -58,17 +58,16 @@ We also audited rate outliers: flagging CPT 96372 at \$1,907.88 and CPT 81003 at
 "Address linkage is where ordinary pipelines produce misleading numbers. Because 97% of provider groups in Centene’s network have only 1 NPI, treating TIN co-membership as independent corroboration is circular.
 
 We engineered a strictly non-circular entity resolution engine with 5 mutually exclusive tiers summing to exactly 100.00%:
-- **Verified-Strict**: 288 NPIs (7.80%) corroborated across $\ge 2$ independent source groups (NPPES + CMS DAC).
-- **Verified-TIN-corroborated**: 203 NPIs (5.50%) backed by multi-NPI organizations.
-- **Probable**: 1,242 NPIs (33.62%) backed by active California practice locations.
-- **Unverified**: 1,956 NPIs (52.95%) comprising deactivated NPIs or non-CA addresses.
-- **Facility/TIN-level**: 5 rows (0.14%) for facility-only fee rows, capped strictly at facility level.
+- **Verified**: 8,340 rows (12.06%) / 517 unique provider-address links (7.39%), corroborated across $\ge 2$ independent source groups (NPPES + CMS DAC / Provider Data Catalog; 289 active NPIs).
+- **Probable**: 58,178 rows (84.14%) / 5,981 links (85.54%) backed by active California practice locations in NPPES.
+- **Unverified**: 2,621 rows (3.79%) / 489 links (7.00%) comprising non-CA addresses or historical registrations.
+- **Facility/TIN-level**: 5 rows (0.01%) / 5 links (0.07%) for facility-only fee rows, capped strictly at facility level.
 
-We removed all circularity by testing a stratified sample of 325 NPIs against the live federal NPI Registry API: achieving **84.0% overall precision** (Verified: 84.2%, Probable: 71.5%). Furthermore, our empirical staleness analysis showed that >5-year-old NPPES addresses agree with CMS DAC at 61.2%, statistically indistinguishable from fresh records (64.5%).
+We evaluated a stratified sample of 325 NPIs against the live federal NPI Registry API as an NPPES self-consistency baseline (84.0% overall agreement; Unverified 99.0%, Verified 84.2%, Probable 71.5%, where Unverified's high score reflects identical historical NPPES registration addresses). In addition, CMS Doctors & Clinicians corroboration validated practicing locations with 100% precision on Verified records, and CMS Provider Data Catalog independently validated 985 Type 2 hospital rows. We also generated `manual_check_sample.csv` with a balanced 40-row sample for external review.
 
 For our final deliverable:
 - **Sheet 1 & `final_rates_ps_grain.csv`**: Exactly **48,006 unique rows** on the required `(NPI, TIN, Address, Billing Code)` grain, collapsed via deterministic median rate aggregation with zero duplicate keys.
-- **Sheet 2 & Parquet/CSV**: The **69,144-row lossless schedule** preserving all 42 relational governance columns."
+- **Sheet 2 & Parquet/CSV**: The **69,144-row lossless schedule** preserving all 45 relational governance columns."
 
 ---
 

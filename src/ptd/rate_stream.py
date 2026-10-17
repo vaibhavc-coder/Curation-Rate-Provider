@@ -72,7 +72,7 @@ class RateStreamProfiler:
             if "HMO" in b_upper and "PPO" not in b_upper:
                 return "EXCLUDED_HMO_DIRECT"
             if "PPO" in b_upper:
-                return "T1_explicit_ppo"
+                return "T1_name_hint_ppo"
             return "T2_shared_commercial"
 
         all_keys_seen = set()

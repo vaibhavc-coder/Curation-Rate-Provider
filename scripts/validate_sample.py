@@ -12,9 +12,13 @@ Validates:
 from __future__ import annotations
 
 import sys
+from pathlib import Path
+
+# Ensure src is on sys.path for direct invocation
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
 import openpyxl
 import polars as pl
-from pathlib import Path
 
 from ptd.config import load_config
 from ptd.final_output import FinalOutputGenerator

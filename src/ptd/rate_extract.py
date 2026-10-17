@@ -79,8 +79,41 @@ class RateExtractor:
         rate_file = self.get_rate_file_path()
         ref_lookup = self.load_provider_reference_lookup()
 
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        schema = pa.schema([
+            ("npi", pa.int64()),
+            ("tin", pa.string()),
+            ("business_name", pa.string()),
+            ("billing_code", pa.string()),
+            ("billing_code_type", pa.string()),
+            ("description", pa.string()),
+            ("raw_item_name", pa.string()),
+            ("raw_item_description", pa.string()),
+            ("negotiation_arrangement", pa.string()),
+            ("negotiated_type", pa.string()),
+            ("negotiated_rate", pa.float64()),
+            ("billing_class", pa.string()),
+            ("service_code", pa.string()),
+            ("modifier", pa.string()),
+            ("setting", pa.string()),
+            ("additional_information", pa.string()),
+            ("expiration_date", pa.string()),
+            ("ppo_evidence_tier", pa.string()),
+            ("npi_status", pa.string()),
+            ("in_network_item_index", pa.int64()),
+            ("provider_reference_id", pa.int64()),
+        ])
+
+        raw_audit_path = self.interim_dir / "raw_price_audit.parquet"
+        self.interim_dir.mkdir(parents=True, exist_ok=True)
+        writer = pq.ParquetWriter(raw_audit_path, schema=schema, compression="zstd")
+
+        batch = []
+        BATCH_SIZE = 50_000
+        total_raw_rows = 0
         dropped_counts = Counter()
-        raw_rows = []
         item_index = 0
 
         logger.info(f"Streaming raw prices from {rate_file.name} (sample_n={sample_n})...")
@@ -120,39 +153,47 @@ class RateExtractor:
                                 add_info = np.get("additional_information", "")
                                 for npi in pg["npis"]:
                                     npi_int = int(npi)
-                                    raw_rows.append({
+                                    batch.append({
                                         "npi": npi_int,
-                                        "tin": pg["tin"],
-                                        "business_name": pg["business_name"],
-                                        "billing_code": b_code,
-                                        "billing_code_type": b_type,
-                                        "description": desc,
-                                        "negotiation_arrangement": neg_arr,
-                                        "negotiated_type": n_type,
-                                        "negotiated_rate": rate_val,
-                                        "billing_class": b_class,
-                                        "service_code": sc,
-                                        "modifier": mod,
-                                        "setting": setting,
-                                        "additional_information": add_info if add_info else "NONE",
-                                        "expiration_date": exp_date,
-                                        "ppo_evidence_tier": tier,
+                                        "tin": str(pg["tin"] or ""),
+                                        "business_name": str(pg["business_name"] or ""),
+                                        "billing_code": str(b_code or ""),
+                                        "billing_code_type": str(b_type or ""),
+                                        "description": str(desc or ""),
+                                        "raw_item_name": str(name or ""),
+                                        "raw_item_description": str(desc or ""),
+                                        "negotiation_arrangement": str(neg_arr or "ffs"),
+                                        "negotiated_type": str(n_type or "negotiated"),
+                                        "negotiated_rate": float(rate_val) if rate_val is not None else 0.0,
+                                        "billing_class": str(b_class or "institutional"),
+                                        "service_code": str(sc or "NONE"),
+                                        "modifier": str(mod or "NONE"),
+                                        "setting": str(setting or "outpatient"),
+                                        "additional_information": str(add_info if add_info else "NONE"),
+                                        "expiration_date": str(exp_date or "9999-12-31"),
+                                        "ppo_evidence_tier": str(tier or "T2_shared_commercial"),
                                         "npi_status": "PLACEHOLDER_ZERO" if npi_int == 0 else "VALID_NPI",
-                                        "in_network_item_index": item_index,
-                                        "provider_reference_id": ref_id,
+                                        "in_network_item_index": int(item_index),
+                                        "provider_reference_id": int(ref_id),
                                     })
+                                    total_raw_rows += 1
+                                    if len(batch) >= BATCH_SIZE:
+                                        tbl = pa.Table.from_pylist(batch, schema=schema)
+                                        writer.write_table(tbl)
+                                        batch.clear()
 
                 if sample_n and item_index >= sample_n:
                     break
 
-        total_raw_rows = len(raw_rows)
+        if batch:
+            tbl = pa.Table.from_pylist(batch, schema=schema)
+            writer.write_table(tbl)
+            batch.clear()
+        writer.close()
+
         logger.info(f"Extracted {total_raw_rows:,} raw expanded price records.")
 
-        df_raw = pl.DataFrame(raw_rows)
-
-        # Save complete raw price audit parquet
-        raw_audit_path = self.interim_dir / "raw_price_audit.parquet"
-        df_raw.write_parquet(raw_audit_path)
+        df_raw = pl.read_parquet(raw_audit_path)
 
         # ---------------------------------------------------------------------
         # 1. SCOPE AND VALIDITY DROPS (Logged to dropped_rows_audit.csv)
@@ -262,6 +303,8 @@ class RateExtractor:
                 pl.len().alias("n_source_prices"),
                 pl.col("business_name").first().alias("business_name"),
                 pl.col("description").first().alias("description"),
+                pl.col("raw_item_name").first().alias("raw_item_name"),
+                pl.col("raw_item_description").first().alias("raw_item_description"),
                 pl.col("negotiation_arrangement").first().alias("negotiation_arrangement"),
                 pl.col("negotiated_type").first().alias("negotiated_type"),
                 pl.col("service_code").first().alias("service_code_used"),
@@ -328,7 +371,7 @@ class RateExtractor:
 
         # Stratified 25 Sample Rows for Verification Trace
         # Include at least 5 T1 rows and 2 modifier rows
-        t1_sample = resolved_rates.filter(pl.col("ppo_evidence_tier") == "T1_explicit_ppo").head(5)
+        t1_sample = resolved_rates.filter(pl.col("ppo_evidence_tier") == "T1_name_hint_ppo").head(5)
         mod_sample = resolved_rates.filter(pl.col("modifier_used") != "NONE").head(4)
         prof_sample = resolved_rates.filter(
             (pl.col("billing_class") == "professional") & (pl.col("ppo_evidence_tier") == "T2_shared_commercial")
@@ -366,7 +409,7 @@ class RateExtractor:
                 & (pl.col("billing_code_type") == k_type)
                 & (pl.col("additional_information") == k_add_info)
                 & (pl.col("negotiation_arrangement") != "capitation")
-                & (pl.col("ppo_evidence_tier").is_in(["T1_explicit_ppo", "T2_shared_commercial"]))
+                & (pl.col("ppo_evidence_tier").is_in(["T1_name_hint_ppo", "T2_shared_commercial"]))
             )
 
             raw_prices_summary = "; ".join([

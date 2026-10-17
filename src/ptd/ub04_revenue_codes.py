@@ -1,7 +1,8 @@
 """Canonical UB-04 Revenue Code Reference Table (CMS / NUBC Standard).
 
 Provides official National Uniform Billing Committee (NUBC) standard descriptions
-for hospital and institutional facility revenue codes (0100 - 0999).
+from the Official UB-04 Revenue Code Specifications (Form CMS-1450 / NUBC Data
+Specifications Manual) for hospital and institutional facility revenue codes (0100 - 0999).
 Guarantees revenue codes receive canonical institutional descriptors rather than
 inheriting bundled CPT procedure names from raw TiC extraction blocks.
 """
@@ -31,7 +32,8 @@ UB04_REVENUE_CODES = {
     "023": "Incremental Nursing Care",
     "230": "Incremental Nursing Care - General",
     "241": "All-inclusive Ancillary - Basic",
-    "250": "Pharmacy - General",
+    "250": "Pharmacy - General Classification",
+    "0250": "Pharmacy - General Classification",
     "252": "Pharmacy - Generic Drugs",
     "253": "Pharmacy - Take Home Drugs",
     "254": "Pharmacy - Drugs with Incident to Diagnostic Services",
@@ -52,7 +54,8 @@ UB04_REVENUE_CODES = {
     "279": "Medical/Surgical Supplies and Devices - Other",
     "280": "Oncology - General",
     "294": "DME - Rental",
-    "300": "Laboratory - General clinical assay",
+    "300": "Laboratory - General Classification",
+    "0300": "Laboratory - General Classification",
     "301": "Laboratory - Chemistry",
     "302": "Laboratory - Immunology",
     "304": "Laboratory - Non-routine CBC",
@@ -113,7 +116,8 @@ UB04_REVENUE_CODES = {
     "440": "Speech-Language Pathology - General",
     "441": "Speech-Language Pathology - Visit Charge",
     "444": "Speech-Language Pathology - Evaluation",
-    "450": "Emergency Room - General",
+    "450": "Emergency Room - General Classification",
+    "0450": "Emergency Room - General Classification",
     "451": "Emergency Room - EMTALA Emergency Screening",
     "456": "Emergency Room - Urgent Care",
     "458": "Emergency Room - Non-emergency",
@@ -155,6 +159,7 @@ UB04_REVENUE_CODES = {
     "634": "Pharmacy - Erythropoietin (EPO) < 10,000 Units",
     "635": "Pharmacy - Erythropoietin (EPO) >= 10,000 Units",
     "636": "Pharmacy - Drugs requiring detailed coding",
+    "0636": "Pharmacy - Drugs requiring detailed coding",
     "637": "Pharmacy - Self-administrable Drugs",
     "681": "Trauma Response - Level I",
     "682": "Trauma Response - Level II",

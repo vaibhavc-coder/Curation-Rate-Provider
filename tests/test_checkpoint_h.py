@@ -98,13 +98,26 @@ def test_grain_reconciliation_exact_tie_out():
 
 
 def test_network_attribution_partition():
-    """Verify that T1_explicit_ppo and T2_shared_commercial cleanly partition all curated keys."""
+    """Verify that T1_name_hint_ppo and T2_shared_commercial cleanly partition all curated keys."""
     cfg = load_config()
     final_parquet = cfg.output_dir / "final_curated_rates.parquet"
     if final_parquet.exists():
         df = pl.read_parquet(final_parquet)
-        t1_c = df.filter(pl.col("ppo_evidence_tier") == "T1_explicit_ppo").height
+        t1_c = df.filter(pl.col("ppo_evidence_tier") == "T1_name_hint_ppo").height
         t2_c = df.filter(pl.col("ppo_evidence_tier") == "T2_shared_commercial").height
         assert t1_c + t2_c == df.height
         assert t1_c > 0
         assert t2_c > 0
+
+        # Verify entity_kind valid values
+        assert "entity_kind" in df.columns
+        kinds = set(df["entity_kind"].unique().to_list())
+        assert kinds.issubset({"real_provider", "network_bucket", "unknown"})
+
+        # Verify no CPT-style descriptor on Revenue Code rows
+        rc_rows = df.filter(pl.col("billing_code_type") == "RC")
+        assert rc_rows.height > 0
+        cpt_keywords = ["OFFICE OR OTH OUTPATIENT", "ESTABLISHED PATIENT", "NEW PATIENT", "SEX HORMONE", "ASSAY OF ESTRADIOL"]
+        for d in rc_rows["billing_code_description"].to_list():
+            for kw in cpt_keywords:
+                assert kw not in (d or "").upper(), f"CPT descriptor leaked to RC row: {d}"

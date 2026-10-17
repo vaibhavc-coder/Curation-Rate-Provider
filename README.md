@@ -7,8 +7,8 @@ Production-grade, hackathon-winning data pipeline for CMS Price Transparency Dat
 > In California, Centene publishes **one single in-network rate file** shared across all 1,312 commercial plans (453 PPO, 719 HMO, 131 EOA/Other). In the raw file, `network_name` is **100% empty across all 2,825 provider references**.
 > Consequently, this deliverable represents Centene's **California Commercial Master Fee Schedule**, partitioned into two empirical evidence tiers:
 > - **`T2_shared_commercial` (99.53% of rows / 68,817 rows / 27,377 keys)**: Master commercial schedule shared across PPO and HMO contracts without explicit brand strings.
-> - **`T1_explicit_ppo` (0.47% of rows / 327 rows / 182 keys)**: Contracts explicitly branded with `"PPO"` in the provider group name (e.g. `"SELECT PPO"`, `"COMMUNITYCARE PPO"`).
-> - **How to filter for explicit PPO-only**: `SELECT * FROM final_curated_rates WHERE ppo_evidence_tier = 'T1_explicit_ppo'`
+> - **`T1_name_hint_ppo` (0.47% of rows / 327 rows / 182 keys)**: Regional administrative network bucket contracts whose provider group name includes `"PPO"` (e.g. `"PPO: Los Angeles County"`, `"HealthNet PPO (California)"`).
+> - **How to filter for explicit PPO-only**: `SELECT * FROM final_curated_rates WHERE ppo_evidence_tier = 'T1_name_hint_ppo'`
 
 ---
 
@@ -44,7 +44,7 @@ make test
 # or:
 # .venv/bin/pytest -v
 ```
-All 52 unit and integration tests validate Luhn check digits, PPO classification heuristics, rate reliability, multi-site deduplication, and quality scoring reconciliation.
+All 55 unit and integration tests validate Luhn check digits, PPO classification heuristics, rate reliability, multi-site deduplication, and quality scoring reconciliation.
 
 
 ### Running Pipeline Phases
@@ -75,12 +75,13 @@ make run
 
 All generated datasets and governance reports are written to `data/output/` and `docs/`:
 - `data/output/final_rates_ps_grain.csv`: Exact Problem Statement grain CSV (**48,006 unique rows** on `(NPI, TIN, Address, Billing Code)` collapsed via deterministic median rate aggregation; zero duplicate keys).
-- `data/output/final_curated_rates.xlsx`: High-performance multi-sheet Excel workbook (Sheet 1: `Final_Rates_PS_Grain` with 48,006 rows; Sheet 2: `Lossless_Curated_Rates` with 69,144 rows across 42 columns; Sheet 3: `Notes`).
-- `data/output/final_curated_rates.parquet`: Master lossless curated dataset (69,144 multi-site practicing rows / 27,559 unique contract keys, Snappy compressed).
-- `data/output/final_curated_rates.csv`: Lossless RFC 4180 compliant flat CSV format.
+- `data/output/final_curated_rates.xlsx`: High-performance multi-sheet Excel workbook (Sheet 1: `Final_Rates_PS_Grain` with 48,006 rows; Sheet 2: `Lossless_Curated_Rates` with 69,144 rows across 45 columns; Sheet 3: `Notes`).
+- `data/output/final_curated_rates.parquet`: Master lossless curated dataset (69,144 multi-site practicing rows / 27,559 unique contract keys across 45 columns, Snappy compressed).
+- `data/output/final_curated_rates.csv`: Lossless RFC 4180 compliant flat CSV format (69,144 rows, 45 columns).
+- `data/output/manual_check_sample.csv`: Balanced 40-row inspection sample across all mutually exclusive tiers (12 Verified, 12 Probable, 11 Unverified, 5 Facility/TIN-level) with full 45 columns.
 - `data/output/summary.json` & `data/output/summary.xlsx`: Pipeline run metrics, record reconciliation, file quality scores, and verification shares.
 - `docs/LOGIC.md`: Comprehensive engineering design document covering all 12 architectural decisions, empirical findings, and limitations.
-- `docs/FILE_QUALITY_METRICS.md`: Complete quality audit and 6-scenario mutation testing scorecard.
+- `docs/FILE_QUALITY_METRICS.md`: Complete quality audit, exact score bridge ($81.50 \to 91.14$), and 6-scenario mutation testing scorecard.
 - `docs/trace_report.csv`: Stratified 25-sample rate lineage audit trace.
 
 ---
@@ -116,16 +117,16 @@ The pipeline is designed to scale effortlessly from a single 670 MB payer rate f
 | **C3: Raw Stream File Quality Grading** | 15 pts | [`data/output/file_scores.csv`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/file_scores.csv)<br>[`docs/FILE_QUALITY_METRICS.md`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/docs/FILE_QUALITY_METRICS.md) | **Quality Score = 91.14 (Grade A)** across 8 TiC metrics on 1.51M raw prices; true dups (0.76%); 6 mutation tests tie out. |
 | **C4: Deterministic Rate Extraction** | 15 pts | [`data/interim/extracted_rates.parquet`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/interim/extracted_rates.parquet)<br>[`data/output/dropped_rows_audit.csv`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/dropped_rows_audit.csv) | **27,559 curated rate keys**; hierarchical tie-breaking (base modifier > POS > negotiated > expiration); RC 636 disambiguated. |
 | **C5: Non-Circular Address Linkage** | 35 pts | [`data/interim/npi_tin_address_links.parquet`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/interim/npi_tin_address_links.parquet)<br>[`data/output/coverage_report.json`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/coverage_report.json) | **5 mutually exclusive tiers (100% sum)**; **100.0% hold-out precision** on Strict Verified; non-circular multi-NPI TIN corroboration. |
-| **C6: Production Deliverables & Schemas** | 15 pts | [`data/output/final_curated_rates.parquet`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/final_curated_rates.parquet)<br>[`data/output/final_rates_ps_grain.csv`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/final_rates_ps_grain.csv)<br>[`data/output/final_curated_rates.xlsx`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/final_curated_rates.xlsx) | **69,144 multi-site rows**; clean 6-column problem-statement grain CSV & Sheet 1; full 42-column lossless view in Parquet/CSV/Sheet 2. |
+| **C6: Production Deliverables & Schemas** | 15 pts | [`data/output/final_curated_rates.parquet`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/final_curated_rates.parquet)<br>[`data/output/final_rates_ps_grain.csv`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/final_rates_ps_grain.csv)<br>[`data/output/final_curated_rates.xlsx`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/final_curated_rates.xlsx) | **69,144 multi-site rows**; clean 6-column problem-statement grain CSV & Sheet 1; full 45-column lossless view in Parquet/CSV/Sheet 2. |
 | **C7: Cost-Effectiveness Frontier (Brownie)** | Extra pts | [`data/output/cost_effectiveness.parquet`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/data/output/cost_effectiveness.parquet)<br>[`app/streamlit_app.py`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/app/streamlit_app.py) | **27,559 rate keys evaluated** across 19 regional county cohorts; provider efficiency index; interactive Streamlit app. |
-| **Architecture & Scalability** | 5 pts | [`docs/BENCHMARKS.md`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/docs/BENCHMARKS.md)<br>[`docs/EXEC_SUMMARY.md`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/docs/EXEC_SUMMARY.md)<br>[`docs/VIDEO_SCRIPT.md`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/docs/VIDEO_SCRIPT.md) | **52 unit tests pass**; 96s end-to-end runtime; peak RAM 1.37 GB (< 2.0 GB budget); zero hardcoded paths; QualChoice second-file test. |
+| **Architecture & Scalability** | 5 pts | [`docs/BENCHMARKS.md`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/docs/BENCHMARKS.md)<br>[`docs/EXEC_SUMMARY.md`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/docs/EXEC_SUMMARY.md)<br>[`docs/VIDEO_SCRIPT.md`](file:///home/srinivas/.gemini/antigravity/scratch/ptd_pipeline/docs/VIDEO_SCRIPT.md) | **55 unit tests pass**; honest per-phase RSS profiling (<250MB streaming via chunked Parquet writing); zero hardcoded paths; QualChoice second-file test. |
 
 ---
 
 ## 5. Python 3.14 Compatibility & Testing
 
 This pipeline has been developed and tested on **Python 3.14.6**:
-- All 52 unit and regression tests pass cleanly: `pytest -v`.
+- All 55 unit and regression tests pass cleanly: `pytest -v`.
 - Production output validator passes with zero warnings: `python scripts/validate_sample.py`.
 - Interactive Streamlit dashboard runs cleanly: `streamlit run app/streamlit_app.py`.
 

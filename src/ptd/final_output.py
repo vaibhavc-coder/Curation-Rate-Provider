@@ -48,6 +48,7 @@ class FinalOutputGenerator:
         "network_label",
         "ppo_evidence_tier",
         "network_participation_ppo",
+        "entity_kind",
         "rate_min",
         "rate_max",
         "n_source_prices",
@@ -71,6 +72,8 @@ class FinalOutputGenerator:
         "state",
         "zip5",
         "billing_code_description",
+        "raw_item_name",
+        "raw_item_description",
         "modifier_used",
         "service_code_used",
     ]
@@ -83,7 +86,7 @@ class FinalOutputGenerator:
         "Specialty": "Clinical specialty resolved from taxonomy crosswalk or NUCC classification",
         "Rate": "Negotiated dollar rate (deterministic median of remaining collision set after hierarchical tie-breaking)",
         "address_confidence": "Numeric confidence link score between 0.0 and 1.0",
-        "address_status": "Verification status: Verified, Probable, or Unverified",
+        "address_status": "Verification status: Verified, Probable, Unverified, or Facility/TIN-level",
         "source_file": "Originating TiC in-network rate file basename",
         "file_quality_score": "Composite raw stream data quality score (from file_scores.csv, TiC grading)",
         "billing_code_type": "Code system: CPT (AMA), HCPCS (CMS), or RC (UB-04 Revenue Code)",
@@ -92,8 +95,9 @@ class FinalOutputGenerator:
         "npi_status": "NPI state: VALID_NPI, PLACEHOLDER_ZERO (facility group), or UNMATCHED_NPPES",
         "tin_canonical_name": "Official legal organization or dominant provider business name for the TIN",
         "network_label": "Contracted health plan network tier or plan group marker (CA_COMMERCIAL_GROUP_SHARED_SCHEDULE)",
-        "ppo_evidence_tier": "PPO contract attribution tier (T1_explicit_ppo or T2_shared_commercial)",
-        "network_participation_ppo": "PPO network participation: True for explicit PPO (T1), Unknown (FHIR Unreachable) for shared schedule (T2), False for Kaiser/IPA",
+        "ppo_evidence_tier": "PPO contract attribution tier (T1_name_hint_ppo or T2_shared_commercial)",
+        "network_participation_ppo": "PPO network participation: Unknown (FHIR Unreachable / unpartitioned commercial group schedule)",
+        "entity_kind": "Entity classification: real_provider (clinical provider practice), network_bucket (payer administrative bucket e.g. PPO/Direct), or unknown",
         "rate_min": "Minimum observed dollar rate across underlying raw price records prior to tie-breaking",
         "rate_max": "Maximum observed dollar rate across underlying raw price records prior to tie-breaking",
         "n_source_prices": "Count of underlying raw contract prices collapsed into this curated rate row",
@@ -116,6 +120,8 @@ class FinalOutputGenerator:
         "state": "Physical practice location standardized two-letter state code",
         "zip5": "Physical practice location standardized 5-digit postal code",
         "billing_code_description": "Clinical procedure or facility service line descriptive text",
+        "raw_item_name": "Raw item name string directly from payer TiC in_network record",
+        "raw_item_description": "Raw item description string directly from payer TiC in_network record",
         "modifier_used": "Contract billing modifier retained after tie-breaking (NONE if base rate)",
         "service_code_used": "Place of Service (POS) code retained after tie-breaking (e.g. 11=Office, 22=Outpatient Hospital)",
     }
@@ -342,7 +348,26 @@ class FinalOutputGenerator:
             for n, s in zip(clean_npis, joined["address_status"].to_list())
         ]
 
-        # Assemble unified DataFrame with exact required 37 columns
+        # Classify entity_kind
+        def classify_entity_kind(b_name: Optional[str], c_name: Optional[str]) -> str:
+            candidates = [str(b_name or "").upper(), str(c_name or "").upper()]
+            bucket_keywords = ["PPO:", "HEALTH NET DIRECT", "DIRECT NETWORK", "HEALTHNET PPO", "COMMERCIAL GROUP", "SHARED SCHEDULE", "NETWORK BUCKET", "COMMUNITYCARE PPO", "SELECT PPO"]
+            for s in candidates:
+                if any(k in s for k in bucket_keywords):
+                    return "network_bucket"
+            if not b_name and not c_name:
+                return "unknown"
+            return "real_provider"
+
+        entity_kinds = [
+            classify_entity_kind(b_name, name)
+            for b_name, name in zip(joined["business_name"].to_list(), joined["tin_canonical_name"].to_list())
+        ]
+
+        raw_item_names = joined["raw_item_name"].fill_null("").to_list() if "raw_item_name" in joined.columns else [""] * joined.height
+        raw_item_descriptions = joined["raw_item_description"].fill_null("").to_list() if "raw_item_description" in joined.columns else [""] * joined.height
+
+        # Assemble unified DataFrame with exact required columns
         final_df = pl.DataFrame({
             # Core 6 Business Columns (Left)
             "NPI": clean_npis,
@@ -366,6 +391,7 @@ class FinalOutputGenerator:
             "network_label": ["CA_COMMERCIAL_GROUP_SHARED_SCHEDULE"] * joined.height,
             "ppo_evidence_tier": joined["ppo_evidence_tier"],
             "network_participation_ppo": ["Unknown"] * joined.height,
+            "entity_kind": entity_kinds,
 
             "rate_min": joined["rate_min"],
             "rate_max": joined["rate_max"],
@@ -390,6 +416,8 @@ class FinalOutputGenerator:
             "state": joined["state"].fill_null("CA"),
             "zip5": joined["zip5"].fill_null(""),
             "billing_code_description": formatted_descriptions,
+            "raw_item_name": raw_item_names,
+            "raw_item_description": raw_item_descriptions,
             "modifier_used": joined["modifier_used"].fill_null("NONE"),
             "service_code_used": joined["service_code_used"].fill_null(""),
         })
@@ -407,9 +435,24 @@ class FinalOutputGenerator:
         logger.info(f"Assembled final curated table: {total_rows:,} rows across {len(self.REQUIRED_COLUMNS)} columns.")
 
         # ---------------------------------------------------------------------
-        # File Exports: Parquet, CSV, Problem-Statement Grain CSV, and Multi-Sheet Excel
+        # File Exports: Parquet, CSV, Problem-Statement Grain CSV, Multi-Sheet Excel, and Manual Sample
         # ---------------------------------------------------------------------
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Export 40-row manual verification check sample across mutually exclusive tiers
+        sample_targets = {"Verified": 12, "Probable": 12, "Unverified": 11, "Facility/TIN-level": 5}
+        manual_rows = []
+        for st, target_n in sample_targets.items():
+            t_df = final_df.filter(pl.col("address_status") == st)
+            if t_df.height >= target_n:
+                manual_rows.append(t_df.sample(n=target_n, seed=42))
+            elif t_df.height > 0:
+                manual_rows.append(t_df)
+        if manual_rows:
+            df_manual_sample = pl.concat(manual_rows)
+            manual_sample_path = self.output_dir / "manual_check_sample.csv"
+            df_manual_sample.write_csv(manual_sample_path)
+            logger.info(f"Exported manual check sample: {manual_sample_path} ({df_manual_sample.height} rows)")
 
         # 1. Parquet Export (42 columns)
         parquet_out = self.output_dir / "final_curated_rates.parquet"

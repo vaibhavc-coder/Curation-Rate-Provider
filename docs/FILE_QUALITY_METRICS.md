@@ -28,19 +28,31 @@ Evaluated across all **1,511,720 raw expanded price records** in `raw_price_audi
 | **METHOD_V1_BASELINE** | Method v1 Score (Checkpoints D/E) | 1.0000 | Structural fan-out scored in Q5 | 81.50 | 81.50 | Historical baseline before within-block duplicate isolation |
 | **TOTALS (METHOD V2)** | | **1.0000** | Within-block duplicate isolation | | **91.14** | **Quality Score = 91.14 (Grade A)** |
 
-### +9.64 Point Score Bridge & Sensitivity Analysis (Method v1 $\to$ Method v2)
-- **Method v1 Baseline (Checkpoints D/E)**: **81.50** (Grade B)
-- **Q5 Duplication Realignment**: **+9.71 points**
-  - Isolating true within-block rate duplicates (0.76%, 11,432 rows $\to$ 99.24 pts) from structural cross-reference fan-out (reported descriptively) added $+9.71$ weighted points ($(99.24 - 2.10) \times 0.10$).
-- **Q6 Staleness & Currency Calibration**: **+0.50 points**
-  - Moving from an arbitrary 70.0 baseline to the documented 50/50 blend (100 pts publication freshness + 70 pts evergreen contract penalty = 80.0 pts) added $+0.50$ weighted points ($(80.0 - 70.0) \times 0.05$).
-- **Reconciliation Adjustments (Q1, Q3, Q8)**: **-0.57 points**
-- **Method v2 Production Score**: $\mathbf{81.50 + 9.71 + 0.50 - 0.57 = 91.14}$ (Grade A).
+### +9.64 Point Score Bridge & Mathematical Decomposition (Method v1 $\to$ Method v2)
+
+The raw quality score moved from **81.50** (Grade B) to **91.14** (Grade A). The bridge contains zero unexplained plugs and decomposes into three verifiable components:
+1. **Q5 Within-Block Duplicate Isolation**: **+9.70 points** ($(99.24 \times 0.10) - (2.10 \times 0.1053) = 9.924 - 0.221 \approx +9.70$).
+2. **Q6 Staleness & Currency Activation**: **+4.00 points** ($80.00 \times 0.05$, previously uncredited / 0 pts).
+3. **Weight Budget Renormalization**: **-4.06 points** (re-scaling across the remaining 6 metrics from the non-staleness $1/0.95$ divisor back to standard 1.00 weight budget).
+
+| Metric Component | Old Method v1 Weight | Old Raw Score | Old Contribution | New Method v2 Weight | New Raw Score | New Contribution | Net Score Impact |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Q1: NPI Luhn** | 0.1579 | 99.97 | 15.79 | 0.1500 | 99.97 | 15.00 | -0.79 |
+| **Q2: Zero Rate** | 0.0526 | 100.00 | 5.26 | 0.0500 | 100.00 | 5.00 | -0.26 |
+| **Q3: Outlier Share** | 0.2105 | 67.30 | 14.17 | 0.2000 | 67.30 | 13.46 | -0.71 |
+| **Q4: Negotiated Mix**| 0.1053 | 99.98 | 10.53 | 0.1000 | 99.98 | 10.00 | -0.53 |
+| **Q5: Duplicate Ratio**| 0.1053 | 2.10 | 0.22 | 0.1000 | 99.24 | 9.92 | **+9.70** |
+| **Q6: Staleness** | 0.0000 | 0.00 | 0.00 | 0.0500 | 80.00 | 4.00 | **+4.00** |
+| **Q7: Schema Validity**| 0.1579 | 100.00 | 15.79 | 0.1500 | 100.00 | 15.00 | -0.79 |
+| **Q8: Internal Consistency**| 0.2105 | 93.82 | 19.74 | 0.2000 | 93.82 | 18.76 | -0.98 |
+| **TOTAL SCORE** | **1.0000** | — | **81.50** | **1.0000** | — | **91.14** | **+9.64** |
+
+$$\mathbf{81.50 + 9.70 + 4.00 - 4.06 = 91.14}$$
 
 **Sensitivity of Final Score to Q6 Blend Assumption**:
-- *100% Publication Freshness (100 pts)*: Quality = 92.14 (+1.00 pt), Combined = 82.81 (Grade B).
+- *100% Publication Freshness (100 pts)*: Quality = 92.14 (+1.00 pt), Combined = 82.74 (Grade B).
 - *50/50 Documented Blend (80 pts)*: Quality = 91.14, Combined = 82.21 (Grade B).
-- *100% Evergreen Penalty (70 pts)*: Quality = 90.64 (-0.50 pt), Combined = 81.91 (Grade B).
+- *100% Evergreen Penalty (70 pts)*: Quality = 90.64 (-0.50 pt), Combined = 81.84 (Grade B).
 The file remains solidly Grade B across all blend assumptions.
 
 ---

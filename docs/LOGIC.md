@@ -5,7 +5,7 @@
 > The raw TiC in-network rate file `2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json` has `network_name: []` completely empty across all 2,825 provider references. Centene publishes a unified commercial group fee schedule shared across PPO, HMO, and POS plans. The rate file itself cannot isolate PPO from HMO or EOA plans without external plan directory links. Network participation is marked `"Unknown"` for all rows, and this deliverable represents Centene's **California Commercial Group Master Fee Schedule**.
 > Contract attribution tiers are documented honestly:
 > - **`T2_shared_commercial` (27,377 curated keys / 68,817 lossless rows)**: Commercial master fee schedule shared across PPO and HMO contracts without explicit network markers.
-> - **`T1_explicit_ppo` / `name_hint_ppo` (182 curated keys / 327 lossless rows)**: Provider groups whose business name string in the raw file contains the keyword `"PPO"` (e.g. `"PPO: Sacramento County"`).
+> - **`T1_name_hint_ppo` (182 curated keys / 327 lossless rows)**: Provider groups whose business name string in the raw file contains the keyword `"PPO"` (e.g. `"PPO: Sacramento County"`), representing administrative network buckets.
 
 ## 1. Executive Summary & Problem Scope
 
@@ -18,7 +18,7 @@ This document details the exact business, clinical, and data engineering logic f
 - **Network**: Commercial Master Schedule (Covering PPO, HMO, and POS plans)
 - **Providers**: Type 1 (Individual / Rendering) and Type 2 (Organization / Group Practice) NPIs
 - **Problem-Statement Grain**: Exactly **48,006 unique rows** on `(NPI, TIN, Address, Billing Code)` collapsed via deterministic median rate aggregation.
-- **Lossless Relational Schedule**: Exactly **69,144 rows** across 42 relational governance columns preserving multi-site practice locations.
+- **Lossless Relational Schedule**: Exactly **69,144 rows** across 45 relational governance columns preserving multi-site practice locations.
 
 ---
 
@@ -101,9 +101,11 @@ In Centene's Health Net California index, **all 1,312 group plans point to the s
   - Causation cannot be proven from the file alone. Therefore, every extracted rate carries an explicit **`ppo_evidence_tier`** column.
 
 ### 5.2 PPO Evidence Tiers & Exclusion Hierarchy
-1. **`T1_explicit_ppo` (91 provider groups, 182 final rates)**:
-   - Groups where `tin.business_name` explicitly contains a county or payer PPO designation (e.g. `PPO: Los Angeles County`, `HealthNet PPO (California)`). Excludes all Ambetter groups.
-2. **`T2_shared_commercial` (4,448 provider groups, 21,426 final rates)**:
+1. **`T1_name_hint_ppo` (91 provider group references, 182 curated contract keys, 327 deliverable rows)**:
+   - Groups where the payer's raw `tin.business_name` explicitly contains a county or payer PPO designation (e.g. `PPO: Los Angeles County`, `HealthNet PPO (California)`). Excludes all Ambetter groups.
+   - **Audit of T1 Business Names**: All 17 distinct T1 business names represent regional administrative network buckets (`PPO: Marin County`, `PPO: Riverside County`, `PPO: Los Angeles County`, etc.), rather than individual clinician or clinic group names.
+   - **Explanation of `provider_group_id: 5`**: `provider_group_id` in the CMS TiC schema is an integer scoped locally within each `provider_references` array item block, NOT a globally unique primary key. In one block, index 5 points to `PPO: Sacramento County` (T1_name_hint_ppo, TIN `57-1728741`), while in another block, index 5 points to `JONG, M.D.` (T2_shared_commercial, TIN `45-3599490`).
+2. **`T2_shared_commercial` (4,448 provider groups, 27,377 curated keys, 68,817 deliverable rows)**:
    - Contracted healthcare providers and facility groups (e.g. `Sutter Health`, `Stanford Healthcare`, `Cedars-Sinai`) that contain no network keyword. Included under the documented shared commercial contract assumption.
 3. **`EXCLUDED_AMBETTER_MARKET` (35 provider groups, 84 rates dropped)**:
    - All groups containing `AMBETTER` (e.g. `DIRECT NETWORK: AMBETTER PPO`, `DIRECT NETWORK: AMBETTER HMO`) are strictly excluded because Ambetter is an individual exchange product line, out of commercial group scope.
@@ -112,7 +114,16 @@ In Centene's Health Net California index, **all 1,312 group plans point to the s
 5. **`EXCLUDED_HMO_DIRECT` (2 provider groups, 19 rates dropped)**:
    - Provider groups explicitly designated as HMO direct networks.
 
-### 5.3 Sensitivity Analysis: T1 vs T2 Rate Parity Check
+### 5.3 Entity Kind & Outlier Clustering Analysis
+The deliverable schema introduces an explicit **`entity_kind`** column (`real_provider`, `network_bucket`, or `unknown`):
+- **`real_provider`** (68,259 deliverable rows / 98.7%): Clinical provider practices, hospitals, and medical groups.
+- **`network_bucket`** (885 deliverable rows / 1.3%): Payer administrative regional containers (`PPO: <County>`, `HEALTH NET DIRECT FFS COMMERCIAL`).
+- **Outlier Clustering Measurement**:
+  - `real_provider`: 3,119 statistical outliers (4.57%), 226 extreme spread flags (0.33%).
+  - `network_bucket`: 1 statistical outlier (0.11%), 0 extreme spread flags (0.00%).
+  - *Conclusion*: Rate dispersion and outliers cluster almost exclusively under individual clinical group contracts, while administrative network buckets reflect standardized regional fee schedules with near-zero dispersion.
+
+### 5.4 Sensitivity Analysis: T1 vs T2 Rate Parity Check
 For providers contracted across both T1 (`PPO: <County>`) and T2 (standard group practice name):
 - Overlap evaluated on NPI `1659352276` and TIN `20-4615687`:
   - Code `87624` (HPV DNA test): T1 rate = **$58.16**, T2 rate = **$58.16** (**0.0% variance, exact match**).
@@ -283,7 +294,7 @@ Evaluated on a 50,000-row baseline sample (Baseline Quality = 80.00):
    - In all 2,825 provider references embedded in the file, the `network_name` field is **100% empty/null**.
    - Consequently, a naive string search for `'PPO'` inside the rate file eliminates 99.8% of legitimate commercial provider contracts.
 3. **Attribution Hierarchy (`network_label` & `ppo_evidence_tier`)**:
-   - **T1 (`T1_explicit_ppo`)**: Applied strictly to rate blocks whose provider reference group explicitly carries a PPO brand marker in its contracted group name (e.g. `"HEALTH NET DIRECT NETWORK: COMMUNITYCARE PPO"`, `"HEALTH NET DIRECT NETWORK: SELECT PPO"`).
+   - **T1 (`T1_name_hint_ppo`)**: Applied strictly to rate blocks whose provider reference group explicitly carries a PPO brand marker in its contracted group name (e.g. `"PPO: Los Angeles County"`, `"PPO: Sacramento County"`, `"HealthNet PPO (California)"`).
    - **T2 (`T2_shared_commercial`)**: Applied to rate blocks tied to Centene's master California commercial fee schedules shared across commercial plans without brand-specific network strings.
    - **Excluded Groups**: Contract groups explicitly marked for HMO lines (e.g. `"SALUD HMO"`, `"COMMUNITYCARE HMO"`) or individual exchange plans (`"DIRECT NETWORK: AMBETTER PPO"`) are filtered prior to rate resolution.
 4. **Inherent Methodological Limitation**:
@@ -439,8 +450,9 @@ Ordered strictly from core commercial pricing to governance attestation, relatio
 14. `npi_status`
 15. `tin_canonical_name`
 16. `network_label` (contracted plan network tier or group marker)
-17. `ppo_evidence_tier` (`T1_explicit_ppo` vs `T2_shared_commercial`)
-18. `rate_min`
+17. `ppo_evidence_tier` (`T1_name_hint_ppo` vs `T2_shared_commercial`)
+18. `network_participation_ppo` (`Unknown`)
+19. `entity_kind` (`real_provider` vs `network_bucket` vs `unknown`)
 19. `rate_max`
 20. `n_source_prices`
 21. `rate_reliability` (`HIGH`, `MEDIUM`, `LOW`)
