@@ -181,23 +181,25 @@ def validate_production_outputs() -> bool:
             t_tin = tr["tin"]
             t_code = tr["billing_code"]
             t_class = tr["billing_class"]
+            t_npi = tr.get("npi")
             t_rate = float(tr["rate_selected"])
 
             # Find matching rows in final deliverable
+            npi_filt = ((pl.col("NPI") == t_npi) | (pl.col("NPI").is_null() & (t_npi == 0))) if t_npi is not None else pl.lit(True)
             matches = df_parquet.filter(
                 (pl.col("TIN") == t_tin)
                 & (pl.col("Billing Code") == t_code)
                 & (pl.col("billing_class") == t_class)
+                & npi_filt
             )
             if matches.height > 0:
-                final_rate = float(matches["Rate"][0])
-                if abs(final_rate - t_rate) < 1e-3:
+                rates = matches["Rate"].to_list()
+                if any(abs(r - t_rate) < 1e-3 for r in rates):
                     matched_traces += 1
                 else:
-                    print(f"   [WARN] Rate mismatch for TIN {t_tin}, Code {t_code}: trace ${t_rate:.2f} vs final ${final_rate:.2f}")
+                    print(f"   [WARN] Rate mismatch for TIN {t_tin}, Code {t_code}, NPI {t_npi}: trace  vs final rates {rates}")
             else:
                 print(f"   [WARN] Trace row not found: TIN {t_tin}, Code {t_code}")
-
         print(f"   Matched Trace Rows: {matched_traces} / {df_trace.height}")
         if matched_traces == df_trace.height:
             print("[PASS] 100% trace sample reconciliation verified.")
