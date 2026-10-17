@@ -100,11 +100,11 @@ cost_effectiveness:
   outlier_method: IQR
   outlier_multiplier: 1.5
 original_input_sources:
-  ambetter_index: /home/srinivas/Downloads/2026-09-28_ambetter_index.json
-  fidelis_index: /home/srinivas/Downloads/2026-09-28_fidelis_index.json
-  healthnet_ca_rate_file: /home/srinivas/Downloads/2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json
-  healthnet_index: /home/srinivas/Downloads/2026-09-30_healthnet_index.json
-  qualchoice_index: /home/srinivas/Downloads/2026-09-28_qualchoice_index.json
+  ambetter_index: data/index/2026-09-28_ambetter_index.json
+  fidelis_index: data/index/2026-09-28_fidelis_index.json
+  healthnet_ca_rate_file: data/raw/2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json
+  healthnet_index: data/index/2026-09-30_healthnet_index.json
+  qualchoice_index: data/index/2026-09-28_qualchoice_index.json
 parser:
   chunk_size: 10000
   ijson_backend: yajl2_c

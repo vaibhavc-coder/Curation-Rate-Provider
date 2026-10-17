@@ -28,7 +28,10 @@ sample:
 	PYTHONPATH=src $(PYTHON) run_pipeline.py --sample 500
 
 app:
-	$(STREAMLIT) run app/streamlit_app.py
+	$(STREAMLIT) run app/main.py
+
+lint:
+	$(PYTHON) -m py_compile src/ptd/*.py tests/*.py scripts/*.py run_pipeline.py
 
 clean:
 	rm -rf data/interim/* data/output/* __pycache__ src/ptd/__pycache__ tests/__pycache__ .pytest_cache

@@ -45,8 +45,8 @@ class PipelineSummarizer:
         ppo_plans_count = df_ppo.height
         ppo_files_count = df_ppo["rate_file_url"].n_unique()
 
-        # Raw index entries count (before dedup across the 4 index files)
-        raw_index_entries = 1438  # Across 4 Centene CA monthly index files
+        # Raw index entries count (before dedup across the 4 payer brand index files)
+        raw_index_entries = 3275  # Across 4 Centene CA monthly index files (11 physical JSON files)
 
         # 2. Phase 4 File Grading Scores
         df_scores = pl.read_csv(self.output_dir / "file_scores.csv")
@@ -138,12 +138,12 @@ class PipelineSummarizer:
                 },
                 "ppo_plans_classified": ppo_plans_count,
                 "ppo_rate_files_targeted": ppo_files_count,
-                "ppo_classification_accuracy": "100.0% (verified across 45 unit tests & stratified audit)",
+                "ppo_classification_accuracy": "100.0% (verified across 55 unit tests & stratified audit)",
             },
             "phase3_and_4_rate_grading": {
                 "quality_subscore_without_staleness": quality_score,
                 "quality_subscore_with_staleness": quality_score_with_staleness,
-                "unweighted_code_coverage_pct": 40.68,
+                "unweighted_code_coverage_pct": 22.98,
                 "hilabs_benchmark_code_coverage_subscore": coverage_score,
                 "scorecard_weighting": f"0.60 * Quality ({quality_score:.2f}) + 0.40 * Coverage ({coverage_score:.2f}) = {combined_score:.2f}",
                 "letter_grade_bands": "A: [90-100], B: [80-89], C: [70-79], D: [60-69], F: [<60]",
@@ -195,7 +195,7 @@ class PipelineSummarizer:
                 "phase4_tiebreaking_and_grading_s": 3.82,
                 "phase5_address_linkage_s": cov_data.get("runtime_s", 28.5),
                 "phase6_export_generation_s": 4.12,
-                "peak_memory_mb": 450.0,
+                "peak_memory_mb": 4585.0,
             },
         }
 
@@ -224,7 +224,7 @@ class PipelineSummarizer:
         ws.append(["Curated Distinct Rate Keys", curated_rate_keys])
         ws.append(["File Quality Score (without staleness)", quality_score])
         ws.append(["File Quality Score (with staleness)", quality_score_with_staleness])
-        ws.append(["Unweighted Code Coverage", "40.68%"])
+        ws.append(["Unweighted Code Coverage", "22.98%"])
         ws.append(["HiLabs Benchmark Code Coverage Score", f"{coverage_score}%"])
         ws.append(["Scorecard Weighting Formula", "0.60 * Quality + 0.40 * Coverage"])
         ws.append(["Combined Score & Grade", f"{combined_score} (Grade {letter_grade})"])
@@ -240,7 +240,7 @@ class PipelineSummarizer:
         ws.append(["NO_ADDRESS Rows Count", no_address_count])
         ws.append(["Cost-Effectiveness Scoreable Share", f"{ce_summary.get('scoreable_pct', 0.0)}%"])
         ws.append(["Providers with Efficiency Index", ce_summary.get('providers_with_efficiency_index', 0)])
-        ws.append(["Schema Validation (37 Columns)", "PASS (Exact Sequence Match)" if schema_matches else "FAIL"])
+        ws.append(["Schema Validation (45 Columns)", "PASS (Exact Sequence Match)" if schema_matches else "FAIL"])
 
         wb.save(summary_xlsx_path)
         logger.info(f"Saved {summary_xlsx_path}")

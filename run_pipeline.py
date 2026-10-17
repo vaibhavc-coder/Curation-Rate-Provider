@@ -180,7 +180,7 @@ def stage_input_files_if_needed(config):
     orig = getattr(config, "raw_config", {}) or {}
     sources = orig.get("original_input_sources", {})
 
-    downloads_dir = Path("/home/srinivas/Downloads")
+    downloads_dir = Path.home() / "Downloads"
     if downloads_dir.exists():
         for p in downloads_dir.glob("*_index*.json"):
             if "(1)" not in p.name:

@@ -454,12 +454,12 @@ class FinalOutputGenerator:
             df_manual_sample.write_csv(manual_sample_path)
             logger.info(f"Exported manual check sample: {manual_sample_path} ({df_manual_sample.height} rows)")
 
-        # 1. Parquet Export (42 columns)
+        # 1. Parquet Export (45 columns)
         parquet_out = self.output_dir / "final_curated_rates.parquet"
         final_df.write_parquet(parquet_out)
         logger.info(f"Exported Parquet: {parquet_out}")
 
-        # 2. CSV Export (42 columns)
+        # 2. CSV Export (45 columns)
         csv_out = self.output_dir / "final_curated_rates.csv"
         final_df.write_csv(csv_out)
         logger.info(f"Exported CSV: {csv_out}")
@@ -503,7 +503,7 @@ class FinalOutputGenerator:
                 else:
                     ws_ps.write_string(row_idx, col_idx, str(val))
 
-        # Sheet 2: Lossless Curated Rates Table (42 columns)
+        # Sheet 2: Lossless Curated Rates Table (45 columns)
         ws_data = wb.add_worksheet("Lossless_Curated_Rates")
         for col_idx, col_name in enumerate(self.REQUIRED_COLUMNS):
             ws_data.write(0, col_idx, col_name, header_fmt)
@@ -523,7 +523,7 @@ class FinalOutputGenerator:
                     ws_data.write_string(row_idx, col_idx, str(val))
 
 
-        # Sheet 2: Notes & Governance Documentation
+        # Sheet 3: Notes & Governance Documentation
         ws_notes = wb.add_worksheet("Notes")
         ws_notes.set_column(0, 0, 25)
         ws_notes.set_column(1, 1, 90)
@@ -539,7 +539,7 @@ class FinalOutputGenerator:
         notes_data = [
             ("PPO Shared-File Reality", "The raw TiC in-network rate file has empty network_name: [] across all 2,825 provider references, reflecting a unified commercial group schedule shared across PPO, HMO, and POS plans. The file cannot isolate PPO from HMO/EOA without external plan directory links. Network participation is set to 'Unknown'."),
             ("Problem-Statement Grain (Sheet 1)", f"Sheet 1 ('Final_Rates_PS_Grain', {ps_df.height:,} rows) collapses multi-site practicing locations and procedure sub-items down to exactly one unique row per (NPI, TIN, Address, Billing Code) using deterministic median rate aggregation."),
-            ("Lossless Curated Rates (Sheet 2)", f"Sheet 2 ('Lossless_Curated_Rates', {total_rows:,} rows) preserves all 42 relational governance columns, site rankings, outlier flags, and lineage metadata."),
+            ("Lossless Curated Rates (Sheet 2)", f"Sheet 2 ('Lossless_Curated_Rates', {total_rows:,} rows) preserves all 45 relational governance columns, site rankings, outlier flags, and lineage metadata."),
             ("Address Linkage Hierarchy", "Provider practicing addresses are curated via multi-source linkage: Group 1 (NPPES npidata, pl_pfile, NPI Registry API) and Group 2 (CMS Doctors & Clinicians National File), corroborated by rate-file TIN co-membership."),
             ("Excel Sheet Capacity", f"Total dataset rows: {total_rows:,}. Fits entirely on a single worksheet (capacity: 1,048,576 rows, Headroom: {(1048576 - total_rows)/1048576*100:.1f}%)."),
             ("Tie-Breaking Hierarchy", "Collisions resolved via: (1) base rates over modifiers, (2) POS service codes matching billing class, (3) negotiated rates over fee schedule, (4) latest expiration date, (5) deterministic median with rate_min/rate_max spread tracking."),
@@ -570,7 +570,7 @@ class FinalOutputGenerator:
         return {
             "total_curated_rate_rows": df_rates.height,
             "total_final_rows": total_rows,
-            "excel_sheets": 2,
+            "excel_sheets": 3,
             "excel_headroom_pct": round((1048576 - total_rows) / 1048576 * 100.0, 2),
             "null_counts": {col: final_df.filter(pl.col(col).is_null()).height for col in self.REQUIRED_COLUMNS},
             "parquet_path": parquet_out,

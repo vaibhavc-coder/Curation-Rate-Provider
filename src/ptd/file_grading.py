@@ -347,6 +347,19 @@ class FileGrader:
             "overlap_cpt_count": len(overlap) if self.proc_weights else 0,
         }
 
+    @staticmethod
+    def _letter_grade(score: float) -> str:
+        """Return letter grade for a numeric score using standard bands."""
+        if score >= 90.0:
+            return "A"
+        elif score >= 80.0:
+            return "B"
+        elif score >= 70.0:
+            return "C"
+        elif score >= 60.0:
+            return "D"
+        return "F"
+
     def grade_raw_stream(self, df_raw: pl.DataFrame) -> Dict[str, Any]:
         """Grade the entire RAW stream and stratified tiers, outputting combined scorecard."""
         overall_quality = self.evaluate_quality_metrics(df_raw, tier_name="OVERALL_RAW_FILE")
@@ -387,7 +400,7 @@ class FileGrader:
                 "quality_subscore_with_staleness": t1_quality["quality_score_with_staleness"],
                 "coverage_subscore": "N/A (Quality-only tier evaluation)",
                 "combined_score": t1_quality["quality_score"],
-                "letter_grade": "A" if t1_quality["quality_score"] >= 90 else "B",
+                "letter_grade": self._letter_grade(t1_quality["quality_score"]),
             },
             {
                 "tier": "T2_shared_commercial",
@@ -395,7 +408,7 @@ class FileGrader:
                 "quality_subscore_with_staleness": t2_quality["quality_score_with_staleness"],
                 "coverage_subscore": "N/A (Quality-only tier evaluation)",
                 "combined_score": t2_quality["quality_score"],
-                "letter_grade": "A" if t2_quality["quality_score"] >= 90 else "B",
+                "letter_grade": self._letter_grade(t2_quality["quality_score"]),
             },
         ]
         df_scores = pl.DataFrame(scores_summary)

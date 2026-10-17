@@ -74,8 +74,8 @@ The file remains solidly Grade B across all blend assumptions.
 Rate reliability evaluates contractual rate stability across the curated grain `(npi, tin, billing_code, billing_class, billing_code_type, additional_information)`:
 $$\text{rate\_spread\_ratio} = \frac{\text{rate\_max}}{\text{rate\_min}} \quad (\text{for } \text{rate\_min} > 0)$$
 
-- **`HIGH` Reliability ($\text{rate\_spread\_ratio} \le 1.0$)**: Single observed contract price ($N=1$) or identical multi-contract rate matches where maximum rate equals minimum rate ($\text{rate\_spread\_ratio} = 1.00$). Represents **26,528 keys (96.26%)** of all curated contract keys.
-- **`MEDIUM` Reliability ($1.0 < \text{rate\_spread\_ratio} \le 3.0$)**: Narrow contractual dispersion within a factor of 3.0. Represents **875 keys (3.18%)**.
+- **`HIGH` Reliability ($\text{rate\_spread\_ratio} \le 1.0$)**: Single observed contract price ($N=1$) or identical multi-contract rate matches where maximum rate equals minimum rate ($\text{rate\_spread\_ratio} = 1.00$). Represents **25,466 keys (92.41%)** of all curated contract keys.
+- **`MEDIUM` Reliability ($1.0 < \text{rate\_spread\_ratio} \le 3.0$)**: Narrow contractual dispersion within a factor of 3.0. Represents **1,937 keys (7.03%)**.
 - **`LOW` Reliability ($\text{rate\_spread\_ratio} > 3.0$)**: Extreme rate variation across bundled contracts. Flagged with `spread_flag = True` and excluded from peer competitiveness frontiers. Represents only **156 keys (0.57%)**.
 
 ---

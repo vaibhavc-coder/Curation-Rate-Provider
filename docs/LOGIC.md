@@ -432,7 +432,7 @@ We measured the empirical agreement rate between NPPES Primary practice addresse
 
 The final production deliverable joins curated provider rates with multi-site practicing locations into a unified, relational tabular dataset.
 
-### 8.1 Required Column Layout (Exactly 37 Columns in Exact Required Sequence)
+### 8.1 Required Column Layout (Exactly 45 Columns in Exact Required Sequence)
 Ordered strictly from core commercial pricing to governance attestation, relational lineage, and technical address components:
 1. `NPI`
 2. `TIN`
@@ -441,7 +441,7 @@ Ordered strictly from core commercial pricing to governance attestation, relatio
 5. `Specialty`
 6. `Rate` (deterministic median rate of remaining collision set)
 7. `address_confidence` (numeric link score [0.0 - 1.0])
-8. `address_status` (`Verified`, `Probable`, `Unverified`)
+8. `address_status` (`Verified`, `Probable`, `Unverified`, `Facility/TIN-level`)
 9. `source_file`
 10. `file_quality_score`
 11. `billing_code_type`
@@ -453,36 +453,43 @@ Ordered strictly from core commercial pricing to governance attestation, relatio
 17. `ppo_evidence_tier` (`T1_name_hint_ppo` vs `T2_shared_commercial`)
 18. `network_participation_ppo` (`Unknown`)
 19. `entity_kind` (`real_provider` vs `network_bucket` vs `unknown`)
-19. `rate_max`
-20. `n_source_prices`
-21. `rate_reliability` (`HIGH`, `MEDIUM`, `LOW`)
-22. `spread_flag` (True if max/min > 3 or n_source_prices > 100)
-23. `review_flag`
-24. `address_rank`
-25. `is_primary_address`
-26. `status_basis` (`INDEPENDENT_AGREEMENT`, `SINGLE_SOURCE_RECENT_TIN`, `SINGLE_SOURCE_ONLY`, `TIN_MODAL_INFERENCE`, `UNVERIFIED_STALE_OR_DEACTIVATED`)
-27. `tin_corroboration_eligible` (True if TIN has >= 3 distinct NPIs or >= 1 Type 2 NPI; False for solo NPIs)
-28. `specialty_plausible`
-29. `class_npi_type_match`
-30. `address_line1`
-31. `address_line2`
-32. `city`
-33. `state`
-34. `zip5`
-35. `billing_code_description`
-36. `modifier_used`
-37. `service_code_used`
+20. `rate_min`
+21. `rate_max`
+22. `n_source_prices`
+23. `negotiated_type`
+24. `negotiation_arrangement`
+25. `rate_basis`
+26. `rate_reliability` (`HIGH`, `MEDIUM`, `LOW`)
+27. `spread_flag` (True if max/min > 3 or n_source_prices > 100)
+28. `outlier_flag`
+29. `review_flag`
+30. `address_rank`
+31. `is_primary_address`
+32. `status_basis` (`INDEPENDENT_AGREEMENT`, `SINGLE_SOURCE_RECENT_TIN`, `SINGLE_SOURCE_ONLY`, `TIN_MODAL_INFERENCE`, `UNVERIFIED_STALE_OR_DEACTIVATED`)
+33. `tin_corroboration_eligible` (True if TIN has >= 3 distinct NPIs or >= 1 Type 2 NPI; False for solo NPIs)
+34. `specialty_plausible`
+35. `class_npi_type_match`
+36. `address_line1`
+37. `address_line2`
+38. `city`
+39. `state`
+40. `zip5`
+41. `billing_code_description`
+42. `raw_item_name`
+43. `raw_item_description`
+44. `modifier_used`
+45. `service_code_used`
 
 ### 8.2 Production Volume & Excel Headroom
-- **Total Multi-Site Production Rows**: **69,144 rows** across 37 columns
+- **Total Multi-Site Production Rows**: **69,144 rows** across 45 columns
 - **Primary Practicing Locations Only**: **27,559 rows** (1:1 with curated rate keys)
 - **NO_ADDRESS Count**: 58 rows (5 facility-only placeholder groups lacking geocoded practice addresses + 53 stale/deactivated unlinked clinician rows)
 - **Excel Capacity Ceiling**: 1,048,576 rows per worksheet
 - **Excel Headroom**: **93.41% headroom** on a single worksheet, completely eliminating multi-file chunking.
 - **Production File Manifest**:
-  - Parquet: `data/output/final_curated_rates.parquet` (1.43 MB)
-  - CSV: `data/output/final_curated_rates.csv` (32.85 MB)
-  - Excel: `data/output/final_curated_rates.xlsx` (13.50 MB; includes `Curated_Rates` and `Notes` sheets)
+  - Parquet: `data/output/final_curated_rates.parquet` (1.56 MB)
+  - CSV: `data/output/final_curated_rates.csv` (44.04 MB)
+  - Excel: `data/output/final_curated_rates.xlsx` (17.48 MB; includes `Final_Rates_PS_Grain`, `Lossless_Curated_Rates`, and `Notes` sheets)
 
 ---
 
@@ -539,7 +546,7 @@ Because the Wilson 95% confidence intervals overlap across all age buckets, the 
 
 ## 11. Comprehensive Pipeline Limitations & Methodological Assumptions
 
-1. **PPO Shared-File Reality**: Centene publishes single unified in-network commercial rate files shared across both PPO and HMO plan IDs. While Ambetter individual market and explicit HMO groups are excluded, commercial master rates cannot be isolated to PPO-only without payer contract metadata. Rates are attributed under documented tiers T1 (explicit PPO) and T2 (shared commercial fee schedule).
+1. **PPO Shared-File Reality**: Centene publishes single unified in-network commercial rate files shared across both PPO and HMO plan IDs. While Ambetter individual market and explicit HMO groups are excluded, commercial master rates cannot be isolated to PPO-only without payer contract metadata. Rates are attributed under documented tiers T1 (name hint PPO) and T2 (shared commercial fee schedule).
 2. **Integrated Health System Flags (Kaiser & IPAs)**: Commercial payers frequently contract with integrated HMO delivery networks (e.g. Kaiser Permanente, Hill Physicians, Sutter Health). Rates associated with these entities are tagged with `review_flag` (`POTENTIAL_INTEGRATED_HMO_KAISER` or `POTENTIAL_INTEGRATED_IPA`) to alert analysts.
 3. **Capitation Exclusion Assumption**: 368 rate blocks specifying `negotiation_arrangement == "capitation"` are excluded from fee-for-service benchmarks as non-comparable risk payments.
 4. **Revenue Code 636 Resolution**: Revenue Code 636 keys are disambiguated by appending `additional_information` into the key, cleanly isolating 1,771 distinct drug service lines (100% identical multi-price matches).
@@ -552,10 +559,10 @@ Because the Wilson 95% confidence intervals overlap across all age buckets, the 
 
 | Deliverable Artifact | File Format | Location / Path | Rows / Items | Verification Status & Notes |
 | :--- | :---: | :--- | :---: | :--- |
-| **Final Curated Rates (Parquet)** | Parquet | `data/output/final_curated_rates.parquet` | 69,144 | Production format; snappy compressed; 42 ordered columns |
-| **Final Curated Rates (CSV)** | CSV | `data/output/final_curated_rates.csv` | 69,144 | Exact row count match with Parquet; full 42 lossless columns |
-| **Problem Statement Grain CSV** | CSV | `data/output/final_rates_ps_grain.csv` | 69,144 | Dedicated 6-column problem-statement grain CSV |
-| **Final Curated Rates (Excel)** | XLSX | `data/output/final_curated_rates.xlsx` | 69,144 | Multi-sheet: `Final_Rates_PS_Grain`, `Lossless_Curated_Rates`, `Notes` |
+| **Final Curated Rates (Parquet)** | Parquet | `data/output/final_curated_rates.parquet` | 69,144 | Production format; snappy compressed; 45 ordered columns |
+| **Final Curated Rates (CSV)** | CSV | `data/output/final_curated_rates.csv` | 69,144 | Exact row count match with Parquet; full 45 lossless columns |
+| **Problem Statement Grain CSV** | CSV | `data/output/final_rates_ps_grain.csv` | 48,006 | Dedicated 6-column problem-statement grain CSV; zero duplicate keys |
+| **Final Curated Rates (Excel)** | XLSX | `data/output/final_curated_rates.xlsx` | 48,006 / 69,144 | Multi-sheet: `Final_Rates_PS_Grain`, `Lossless_Curated_Rates`, `Notes` |
 | **Rate Outlier Review Audit** | CSV | `data/output/rate_outlier_review.csv` | 1,064 | Flagged rates >10x or <0.1x of peer median with contract details |
 | **Cost-Effectiveness Frontier** | Parquet | `data/output/cost_effectiveness.parquet` | 27,559 | Curated-key grain; 21,406 scoreable rows; 869 provider indices |
 | **C7 Audit Sample** | CSV | `data/output/sample_c7_scores.csv` | 25 | Stratified sample for audit; 100% Luhn valid |
