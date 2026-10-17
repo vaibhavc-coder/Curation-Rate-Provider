@@ -1,0 +1,34 @@
+.PHONY: all setup test run sample phase1 phase2 clean lint
+
+VENV := .venv
+PYTHON := $(VENV)/bin/python
+PYTEST := $(VENV)/bin/pytest
+STREAMLIT := $(VENV)/bin/streamlit
+
+setup:
+	python3 -m venv $(VENV)
+	$(VENV)/bin/pip install --upgrade pip
+	$(VENV)/bin/pip install -r requirements.txt
+
+all: test run
+
+test:
+	PYTHONPATH=src $(PYTEST) -v tests/
+
+run:
+	PYTHONPATH=src $(PYTHON) run_pipeline.py --all
+
+phase1:
+	PYTHONPATH=src $(PYTHON) run_pipeline.py --phase 1
+
+phase2:
+	PYTHONPATH=src $(PYTHON) run_pipeline.py --phase 2
+
+sample:
+	PYTHONPATH=src $(PYTHON) run_pipeline.py --sample 500
+
+app:
+	$(STREAMLIT) run app/streamlit_app.py
+
+clean:
+	rm -rf data/interim/* data/output/* __pycache__ src/ptd/__pycache__ tests/__pycache__ .pytest_cache

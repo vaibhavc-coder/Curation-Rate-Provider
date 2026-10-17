@@ -1,0 +1,138 @@
+# PTD Pipeline Configuration
+# All paths can be overridden via CLI arguments or environment variables (e.g. PTD_CONFIG_PATH)
+
+project:
+  name: "ptd_pipeline"
+  version: "1.0.0"
+  description: "Production-grade PTD Curation Pipeline for Centene Provider Rates"
+
+original_input_sources:
+  healthnet_index: "/home/srinivas/Downloads/2026-09-30_healthnet_index.json"
+  ambetter_index: "/home/srinivas/Downloads/2026-09-28_ambetter_index.json"
+  qualchoice_index: "/home/srinivas/Downloads/2026-09-28_qualchoice_index.json"
+  fidelis_index: "/home/srinivas/Downloads/2026-09-28_fidelis_index.json"
+  healthnet_ca_rate_file: "/home/srinivas/Downloads/2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json"
+
+paths:
+  data_dir: "data"
+  raw_dir: "data/raw"
+  index_dir: "data/index"
+  reference_dir: "data/reference"
+  interim_dir: "data/interim"
+  output_dir: "data/output"
+  docs_dir: "docs"
+  reports_dir: "data/output/reports"
+
+reference_files:
+  nppes_zip: "data/reference/NPPES_Data_Dissemination_October_2026_V2.zip"
+  nucc_taxonomy: "data/reference/nucc_taxonomy.csv"
+  hilabs_workbook: "data/reference/Rate_Benchmarking_Individual_Weights_Hackathon.xlsx"
+  manifest: "data/reference/manifest.sha256"
+
+scope:
+  payer: "Centene"
+  target_market: "GROUP"
+  target_state: "CA"
+  target_network: "PPO"
+  allowed_npi_types: [1, 2]
+
+parser:
+  chunk_size: 10000
+  ijson_backend: "yajl2_c"
+
+classifier:
+  random_seed: 42
+  min_confidence_threshold: 0.80
+  metal_tiers: ["Platinum", "Gold", "Silver", "Bronze"]
+  known_hmo_families:
+    - "WholeCare"
+    - "SmartCare"
+    - "Salud"
+    - "Full Network"
+    - "CalChoice"
+    - "CommunityCare"
+    - "HMO"
+  network_tokens:
+    ppo: ["PPO", "PREFERRED PROVIDER ORGANIZATION"]
+    hmo: ["HMO", "HEALTH MAINTENANCE ORGANIZATION"]
+    epo: ["EPO", "EXCLUSIVE PROVIDER ORGANIZATION"]
+    pos: ["POS", "POINT OF SERVICE"]
+
+rate_extraction:
+  tie_break_hierarchy:
+    - "drop_null_zero_negative"
+    - "drop_expired"
+    - "prefer_dollar_over_percentage"
+    - "prefer_negotiated_over_fee_schedule"
+    - "match_billing_class_to_npi_type"
+    - "latest_expiration_date"
+    - "median_tiebreaker"
+
+address_linking:
+  independence_groups:
+    group_1_nppes:
+      sources: ["nppes_primary", "nppes_secondary", "nppes_mailing", "npi_registry_api"]
+      description: "Shared upstream CMS NPPES dissemination database and NPI Registry API"
+    group_2_cms:
+      sources: ["cms_doctors_clinicians", "medicare_public"]
+      description: "CMS provider enrollment and Medicare claims data"
+    group_3_state_payer:
+      sources: ["ca_medical_board", "healthnet_directory"]
+      description: "State licensing board and payer network provider directory"
+
+  corroboration_modifiers:
+    tin_co_membership:
+      description: "Rate-file TIN co-membership entity corroboration (modifier, not an independent group)"
+
+  sources:
+    nppes_primary:
+      enabled: true
+      trust_tier: "HIGH"
+      base_weight: 0.25
+    nppes_secondary:
+      enabled: true
+      trust_tier: "MODERATE"
+      base_weight: 0.15
+    nppes_mailing:
+      enabled: true
+      trust_tier: "LOW"
+      base_weight: 0.05
+    npi_registry_api:
+      enabled: true
+      trust_tier: "HIGH"
+      rate_limit_per_sec: 5
+      cache_enabled: true
+      base_weight: 0.25
+    cms_doctors_clinicians:
+      enabled: true
+      trust_tier: "HIGH"
+      base_weight: 0.25
+    medicare_public:
+      enabled: true
+      trust_tier: "MODERATE"
+      base_weight: 0.15
+    healthnet_directory:
+      enabled: false
+      trust_tier: "HIGH"
+      base_weight: 0.20
+
+  fuzzy_matching:
+    street_similarity_threshold: 85.0
+    city_similarity_threshold: 90.0
+
+  scoring_weights:
+    source_agreement: 0.35
+    source_trust: 0.25
+    recency_currency: 0.15
+    tin_corroboration: 0.15
+    taxonomy_plausibility: 0.05
+    name_location_hint: 0.05
+
+  tin_corroboration_min_npis: 2
+  verification_threshold: 0.70
+  probable_threshold: 0.40
+
+cost_effectiveness:
+  min_peer_group_size: 5
+  outlier_method: "IQR"
+  outlier_multiplier: 1.5
