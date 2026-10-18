@@ -71,17 +71,20 @@ For our final deliverable:
 
 ---
 
-### [03:30 - 04:15] Act 5: Challenge C7: Cost-Effectiveness Provider Frontier
-**Visual**: Streamlit app showing county cost-efficiency curves and provider frontier rankings.
+### [03:30 - 04:15] Act 5: Live UI Demonstration & Challenge C7 Frontier (45 Seconds)
+**Visual**: Live interactive Streamlit dashboard running locally at `http://localhost:8501` (`streamlit run app/main.py` or `make ui`).  
+**Timing**: *Estimated demo duration: ~45 seconds (to be timed by presenter).*
 
-"For Challenge C7, we mapped California providers across 19 geographical county clusters and established specialty peer groups.
-
-We computed median benchmark rates for each procedure and derived Provider Efficiency Indices:
-- Providers with index < 1.0 deliver high-value, cost-effective care below regional peer medians.
-- Providers with index > 1.0 represent high-cost contracting outliers.
-- We integrated automated regional-to-statewide fallbacks to protect against thin provider samples.
-
-Actuaries and network managers can visually explore cost-efficiency frontiers and filter by verified practicing addresses in real time via our interactive Streamlit application."
+**Click Actions & Demo Walkthrough**:
+1. **[03:30 - 03:40] Executive View**:
+   - *Action*: Point to the top regulatory notice banner, then highlight the KPI cards and the TiC 8-metric Grade A card (91.14).
+   - *Presenter Says*: "Here is our live Streamlit application running on under 280 MB of RAM. Notice the top governance banner acknowledging the shared California master schedule, alongside our 8-metric Grade A quality scorecard and address status donut."
+2. **[03:40 - 03:55] Analyst View & C7 Frontier**:
+   - *Action*: Click `🔍 Analyst View` in the sidebar. In the search box, type `99213` (Office Visit). Show the rate distribution histogram, the red median line (\$128.50), the C7 price frontier ranking, and the California regional ZIP3 map.
+   - *Presenter Says*: "Moving to the Analyst View, I filter for CPT 99213. Instantly, we see the contract rate distribution, peer median lines, and our Challenge C7 cost-effectiveness frontier ranking providers across California's 19 regional county cohorts—all mapped via zero-latency ZIP3 centroids."
+3. **[03:55 - 04:15] Network & Addresses & Auditor Sample**:
+   - *Action*: Click `🗺️ Network & Addresses`. Scroll down to Section 4: *Auditor Verification Sample*. Click the checkbox `Confirmed Correct` on row 1 to demonstrate real-time agreement percentage recalculation, then gesture to the CSV download button.
+   - *Presenter Says*: "In Network and Addresses, judges can audit our non-circular R1-through-R8 rules and our interactive 40-row manual check sample. Auditors can verify addresses live in the browser, watch the agreement rate update dynamically, and download the annotated audit CSV."
 
 ---
 

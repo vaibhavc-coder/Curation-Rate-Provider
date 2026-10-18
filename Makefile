@@ -1,4 +1,4 @@
-.PHONY: all setup test run sample phase1 phase2 clean lint
+.PHONY: all setup test run sample phase1 phase2 clean lint app ui
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -28,6 +28,9 @@ sample:
 	PYTHONPATH=src $(PYTHON) run_pipeline.py --sample 500
 
 app:
+	$(STREAMLIT) run app/main.py
+
+ui:
 	$(STREAMLIT) run app/main.py
 
 lint:

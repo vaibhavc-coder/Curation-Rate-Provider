@@ -1,0 +1,159 @@
+{
+  "npi_coverage": {
+    "total_unique_npis": 3693,
+    "strict_v1_verified_npis_count": 289,
+    "strict_v1_verified_npis_pct": 7.83,
+    "full_v2_verified_npis_count": 493,
+    "full_v2_verified_npis_pct": 13.35,
+    "probable_npis_count": 3086,
+    "probable_npis_pct": 83.56,
+    "unverified_npis_count": 114,
+    "unverified_npis_pct": 3.09,
+    "type1_npis_count": 641,
+    "type1_strict_verified_pct": 31.51,
+    "type1_full_verified_pct": 35.41,
+    "type2_npis_count": 3044,
+    "type2_strict_verified_pct": 2.86,
+    "type2_full_verified_pct": 8.74,
+    "unknown_or_deactivated_npis_count": 8
+  },
+  "tin_coverage": {
+    "total_unique_tins": 2856,
+    "strict_v1_verified_tins_count": 270,
+    "strict_v1_verified_tins_pct": 9.45,
+    "full_v2_verified_tins_count": 336,
+    "full_v2_verified_tins_pct": 11.76,
+    "probable_tins_count": 2507,
+    "probable_tins_pct": 87.78,
+    "unverified_tins_count": 13,
+    "unverified_tins_pct": 0.46
+  },
+  "rate_weighted_coverage": {
+    "total_curated_rates": 27559,
+    "strict_v1_verified_rates_count": 3770,
+    "strict_v1_verified_rates_pct": 13.68,
+    "full_v2_verified_rates_count": 7775,
+    "full_v2_verified_rates_pct": 28.21
+  },
+  "specialty_mapping": {
+    "mapped_share_pct": 99.81,
+    "plausible_share_pct": 50.89,
+    "unmapped_taxonomies_top5": {
+      "": 7
+    }
+  },
+  "rule_fire_counts": {
+    "R3_NPPES_STALE_OVER_3Y": 2874,
+    "R5_NON_CA_ADDRESS": 493,
+    "R6_MAILING_ONLY_ADDRESS": 1127,
+    "R1_MULTI_ADDRESS_KEPT_UNCOLLAPSED": 1626,
+    "R2_SAME_NPI_MULTI_TIN": 73,
+    "R7_SOURCES_DISAGREE_RANKED": 664,
+    "R4_DEACTIVATED_NPI": 7,
+    "R8_NPI_ZERO_TIN_INFERENCE": 5,
+    "UNMATCHED_NPI_IN_NPPES": 1
+  },
+  "candidates_per_npi_histogram": {
+    "1": 2082,
+    "2": 1274,
+    "3": 170,
+    "4": 65,
+    "5": 25,
+    "6": 13,
+    "7": 10,
+    "8": 5,
+    "9": 9,
+    "10": 8,
+    "11": 3,
+    "12": 1,
+    "13": 1,
+    "14": 2,
+    "15": 2,
+    "16": 2,
+    "17": 2,
+    "18": 1,
+    "19": 2,
+    "20": 1,
+    "21": 1,
+    "23": 1,
+    "24": 1,
+    "25": 1,
+    "29": 2,
+    "31": 1,
+    "32": 2,
+    "35": 1,
+    "36": 1,
+    "37": 1,
+    "43": 1,
+    "44": 1,
+    "74": 1,
+    "345": 1
+  },
+  "empirical_staleness": {
+    "< 1 year": {
+      "total_dac_npis": 31,
+      "agreed": 20,
+      "agreement_pct": 64.52,
+      "wilson_ci_95": [
+        46.9,
+        78.9
+      ]
+    },
+    "1 - 3 years": {
+      "total_dac_npis": 54,
+      "agreed": 38,
+      "agreement_pct": 70.37,
+      "wilson_ci_95": [
+        57.2,
+        80.9
+      ]
+    },
+    "3 - 5 years": {
+      "total_dac_npis": 39,
+      "agreed": 23,
+      "agreement_pct": 58.97,
+      "wilson_ci_95": [
+        43.4,
+        72.9
+      ]
+    },
+    "> 5 years": {
+      "total_dac_npis": 178,
+      "agreed": 109,
+      "agreement_pct": 61.24,
+      "wilson_ci_95": [
+        53.9,
+        68.1
+      ]
+    },
+    "overall": {
+      "total_dac_npis": 302,
+      "agreed": 190,
+      "agreement_pct": 62.91,
+      "wilson_ci_95": [
+        57.3,
+        68.2
+      ]
+    }
+  },
+  "recency_sensitivity": {
+    "1_year": {
+      "verified_count": 339,
+      "verified_pct": 9.18
+    },
+    "3_years": {
+      "verified_count": 447,
+      "verified_pct": 12.1
+    },
+    "5_years": {
+      "verified_count": 474,
+      "verified_pct": 12.84
+    },
+    "none_unrestricted": {
+      "verified_count": 562,
+      "verified_pct": 15.22
+    }
+  },
+  "runtime_s": 54.3,
+  "memory_mb": -769.4
+}

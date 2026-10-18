@@ -1,0 +1,4 @@
+tier,quality_subscore,quality_subscore_with_staleness,coverage_subscore,combined_score,letter_grade
+OVERALL_RAW_FILE,91.14,91.14,68.81,82.21,B
+T1_name_hint_ppo,79.73,79.73,N/A (Quality-only tier evaluation),79.73,C
+T2_shared_commercial,91.14,91.14,N/A (Quality-only tier evaluation),91.14,A
