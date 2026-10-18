@@ -129,18 +129,14 @@ make ui
 *Accessible locally at `http://localhost:8501` (startup time: ~0.6s, peak memory: < 280 MB).*
 
 #### Dashboard Views & Interactive Capabilities:
-1. **Executive View (`app/views/executive.py`)**: High-level macro KPIs from `summary.json`, dual ingestion/curation funnels, canonical 8-metric TiC grade card, address status donut with grain toggles, and one-click `summary.xlsx` executive download.
+1. **Executive View (`app/views/executive.py`)**: Strategic macro KPIs from `summary.json`, dual ingestion/curation funnels, canonical 8-metric TiC grade card, address status donut with grain toggles, Type 1 vs Type 2 clinical mobility split, collapsible Limitations & Structural Boundaries panel, and direct deliverable download buttons (`final_rates_ps_grain.csv`, `summary.xlsx`).
 2. **Analyst View (`app/views/analyst.py`)**: Advanced predicate filtering (Code, Specialty, TIN, NPI, Tier, Outlier), paginated curated rates table with CSV export, rate distribution histograms and box plots with peer median benchmarks, deep provider footprint drill-down, Cost-Effectiveness price frontier (C7), and California regional ZIP3 map.
-3. **File Quality & Audits (`app/views/files_quality.py`)**: Detailed 8-dimension quality scorecard, mathematical waterfall score bridge ($81.50 \to 91.14$), 6-scenario synthetic mutation testing scorecard, and interactive rate outlier review browser (`rate_outlier_review.csv`).
-4. **Network & Addresses (`app/views/addresses.py`)**: Plan classification registry, R1–R8 linkage rule audit with hit counts, empirical cross-source agreement by clinician update age with 95% Wilson confidence intervals, and an interactive 40-row manual check sample data editor with real-time agreement calculation and annotated CSV export.
-5. **Methodology & Downloads (`app/views/methodology.py`)**: One-click download center for all production deliverables (PS Grain CSV, Master Lossless Parquet, Excel, summary files), input manifest SHA-256 verification, and collapsible ADR documentation.
+3. **File Quality & Audits (`app/views/files_quality.py`)**: Detailed 8-dimension quality scorecard, mathematical waterfall score bridge ($81.50 \to 91.14$), 6-scenario synthetic mutation testing scorecard, interactive rate outlier review browser (`rate_outlier_review.csv`), and interactive 40-row Manual Address Audit table with live agreement recalculation and annotated CSV export.
 
 #### Screenshots Reference (`docs/screenshots/`):
-- `docs/screenshots/01_executive_view.png`: Executive macro KPIs, funnels, and address distribution.
+- `docs/screenshots/01_executive_view.png`: Executive macro KPIs, funnels, address distribution, and download hub.
 - `docs/screenshots/02_analyst_view.png`: Contracting analyst table, histograms, provider drill-down, and CA regional map.
-- `docs/screenshots/03_file_quality_view.png`: TiC 8-metric scorecard, score bridge waterfall, and outlier browser.
-- `docs/screenshots/04_network_addresses_view.png`: Plan classification, R1-R8 rule hits, staleness CI plot, and manual check editor.
-- `docs/screenshots/05_methodology_downloads_view.png`: Deliverable downloads hub and ADR documentation.
+- `docs/screenshots/03_file_quality_view.png`: TiC 8-metric scorecard, score bridge waterfall, outlier browser, and manual address audit editor.
 *(Note: Capture screenshots manually in browser at `http://localhost:8501` or via headless browser).*
 
 ---

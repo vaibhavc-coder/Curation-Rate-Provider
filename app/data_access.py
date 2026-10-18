@@ -230,6 +230,9 @@ def query_curated_rates_polars(
     outlier_filter: Optional[str] = None,
     rate_min: Optional[float] = None,
     rate_max: Optional[float] = None,
+    code_type: Optional[str] = None,
+    billing_class: Optional[str] = None,
+    entity_type: Optional[str] = None,
     limit: int = 1000
 ) -> Optional[pd.DataFrame]:
     """Execute memory-bounded predicate pushdown on final_curated_rates.parquet."""
@@ -238,6 +241,7 @@ def query_curated_rates_polars(
         return None
     try:
         lazy_df = pl.scan_parquet(path)
+        schema = lazy_df.collect_schema().names()
         if billing_code and billing_code.strip():
             lazy_df = lazy_df.filter(pl.col("Billing Code").str.to_uppercase().str.contains(billing_code.strip().upper()))
         if specialty and specialty != "ALL":
@@ -258,6 +262,12 @@ def query_curated_rates_polars(
             lazy_df = lazy_df.filter(pl.col("Rate") >= rate_min)
         if rate_max is not None:
             lazy_df = lazy_df.filter(pl.col("Rate") <= rate_max)
+        if code_type and code_type != "ALL" and "billing_code_type" in schema:
+            lazy_df = lazy_df.filter(pl.col("billing_code_type") == code_type)
+        if billing_class and billing_class != "ALL" and "billing_class" in schema:
+            lazy_df = lazy_df.filter(pl.col("billing_class") == billing_class)
+        if entity_type and entity_type != "ALL" and "entity_kind" in schema:
+            lazy_df = lazy_df.filter(pl.col("entity_kind") == entity_type)
 
         display_cols = [
             "NPI", "TIN", "Address", "Billing Code", "Specialty", "Rate",

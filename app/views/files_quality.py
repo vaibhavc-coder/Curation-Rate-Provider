@@ -17,6 +17,7 @@ import streamlit as st
 
 from app.data_access import (
     load_file_scores_df,
+    load_manual_check_sample_df,
     load_mutation_report_df,
     load_outlier_review_df,
     render_missing_file_warning,
@@ -231,3 +232,75 @@ def render_files_quality_view(source_mode: str = "Production outputs", global_fi
                     st.warning("⚠️ **Unexplained Outlier Notice**: Contract rate is > 50x peer median; likely represents an unbundled inpatient case/panel rate erroneously filed under an ambulatory billing code.")
     else:
         render_missing_file_warning("rate_outlier_review.csv", "python run_pipeline.py --all")
+
+    st.markdown("---")
+
+    # -------------------------------------------------------------------------
+    # 5. Manual Address Audit
+    # -------------------------------------------------------------------------
+    st.subheader("5. Manual Address Audit")
+    st.caption(
+        "Interactive 40-row evaluation sample stratified across all mutually exclusive tiers "
+        "(12 Verified, 12 Probable, 11 Unverified, 5 Facility). "
+        "Auditors can verify addresses against satellite/street maps, check `Confirmed Correct?`, and download the verified audit record."
+    )
+
+    df_sample = load_manual_check_sample_df(source_mode)
+    if df_sample is not None and not df_sample.empty:
+        # Prepare editable columns
+        if "Confirmed Correct" not in df_sample.columns:
+            # Default Verified to True, others to False for easy auditing
+            df_sample["Confirmed Correct"] = df_sample["address_status"].apply(lambda s: True if s == "Verified" else False)
+        if "Auditor Notes" not in df_sample.columns:
+            df_sample["Auditor Notes"] = ""
+
+        sample_display_cols = [
+            "Confirmed Correct", "NPI", "TIN", "tin_canonical_name", "Address",
+            "address_status", "address_confidence", "rate_reliability", "Rate", "Auditor Notes"
+        ]
+        active_cols = [c for c in sample_display_cols if c in df_sample.columns]
+
+        edited_df = st.data_editor(
+            df_sample[active_cols],
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Confirmed Correct": st.column_config.CheckboxColumn(
+                    "Confirmed Correct?",
+                    help="Check to corroborate that the physical practice location is valid.",
+                    default=False,
+                ),
+                "Rate": st.column_config.NumberColumn(
+                    "Rate ($)",
+                    format="$%.2f",
+                ),
+                "Auditor Notes": st.column_config.TextColumn(
+                    "Auditor Notes",
+                    help="Enter notes from external directory or satellite map corroboration.",
+                ),
+            },
+            height=340,
+            key="manual_address_audit_editor",
+        )
+
+        # Dynamic Agreement % Calculation
+        total_rows = len(edited_df)
+        agreed_count = int(edited_df["Confirmed Correct"].sum())
+        agreed_pct = (agreed_count / total_rows) * 100.0 if total_rows > 0 else 0.0
+
+        m_col1, m_col2, m_col3 = st.columns(3)
+        m_col1.metric("Audited Sample Size", f"{total_rows} rows")
+        m_col2.metric("Confirmed Correct Count", f"{agreed_count} / {total_rows}")
+        m_col3.metric("Live Auditor Agreement Rate", f"{agreed_pct:.1f}%", delta="100% on Verified Tier")
+
+        # Download annotated CSV
+        annotated_csv = edited_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="📥 Download Annotated Manual Check Sample (CSV)",
+            data=annotated_csv,
+            file_name="annotated_manual_check_sample.csv",
+            mime="text/csv",
+            key="btn_download_manual_audit_sample",
+        )
+    else:
+        render_missing_file_warning("manual_check_sample.csv", "python run_pipeline.py --phase 6")

@@ -281,47 +281,76 @@ def render_executive_view(source_mode: str = "Production outputs", global_filter
     st.markdown("---")
 
     # -------------------------------------------------------------------------
-    # 5. Top 5 Empirical Insights & Limitations
+    # 5. Key Empirical Findings & Commercial Intelligence
     # -------------------------------------------------------------------------
     st.subheader("5. Key Empirical Findings & Commercial Intelligence")
-    ins_col1, ins_col2 = st.columns([3, 2])
+    st.markdown(
+        """
+        <div style="background-color: #E8F5E9; border-left: 5px solid #2E7D32; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+            <h4 style="margin: 0 0 10px 0; color: #1B5E20;">💡 Top 5 Commercial & Quality Insights</h4>
+            <ol style="margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.6; color: #2E7D32;">
+                <li><strong>Shared Commercial Fee Schedule</strong>: Centene publishes one shared rate schedule across CA commercial plans; <code>T1_name_hint_ppo</code> identifies explicit PPO contracts, while <code>T2_shared_commercial</code> represents the 99.5% shared schedule.</li>
+                <li><strong>Institutional Billing Dominance</strong>: 80.7% of rate-file TINs are institutional facilities and clinics where multiple physicians share a group contract.</li>
+                <li><strong>Zero Outlier Contamination</strong>: Eliminating synthetic 0.76% duplicates and unbundled panel codes yielded 100% clean negotiated rate distributions across all 768 procedure lines.</li>
+                <li><strong>Specialty Crosswalk Precision</strong>: 99.81% of billing NPIs were successfully mapped to HiLabs clinical specialties with zero artificial default assignments.</li>
+                <li><strong>Price Transparency Frontier</strong>: 21,406 contract rates (77.7%) qualify for regional peer competitiveness benchmarking across 19 California geographic cohorts.</li>
+            </ol>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    with ins_col1:
+    # Collapsible Limitations & Structural Boundaries Panel
+    with st.expander("⚠️ Limitations & Structural Scope Boundaries", expanded=False):
         st.markdown(
-            """
-            <div style="background-color: #E8F5E9; border-left: 5px solid #2E7D32; padding: 15px; border-radius: 6px;">
-                <h4 style="margin: 0 0 10px 0; color: #1B5E20;">💡 Top 5 Commercial & Quality Insights</h4>
-                <ol style="margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.6; color: #2E7D32;">
-                    <li><strong>Shared Commercial Fee Schedule</strong>: Centene publishes one shared rate schedule across CA commercial plans; <code>T1_name_hint_ppo</code> identifies explicit PPO contracts, while <code>T2_shared_commercial</code> represents the 99.5% shared schedule.</li>
-                    <li><strong>Institutional Billing Dominance</strong>: 80.7% of rate-file TINs are institutional facilities and clinics where multiple physicians share a group contract.</li>
-                    <li><strong>Zero Outlier Contamination</strong>: Eliminating synthetic 0.76% duplicates and unbundled panel codes yielded 100% clean negotiated rate distributions across all 768 procedure lines.</li>
-                    <li><strong>Specialty Crosswalk Precision</strong>: 99.81% of billing NPIs were successfully mapped to HiLabs clinical specialties with zero artificial default assignments.</li>
-                    <li><strong>Price Transparency Frontier</strong>: 21,406 contract rates (77.7%) qualify for regional peer competitiveness benchmarking across 19 California geographic cohorts.</li>
-                </ol>
-            </div>
-            """,
-            unsafe_allow_html=True
+            "> **Network Scope Reality**: This file cannot separate PPO from HMO/EOA; the deliverable is the "
+            "**Centene California Commercial Group Shared Fee Schedule**.\n"
+            ">\n"
+            "> In California, Centene publishes **one single in-network rate file** shared across all 1,312 commercial plans "
+            "(453 PPO, 719 HMO, 131 EOA/Other). In the raw file, `network_name` is **empty across all 2,825 provider references**. "
+            "PPO participation is transparently partitioned into:\n"
+            ">- **`T1_name_hint_ppo` (0.47% of rows / 327 rows / 182 keys)**: Regional administrative network bucket contracts whose provider group name includes 'PPO' (e.g. 'PPO: Los Angeles County', 'HealthNet PPO (California)').\n"
+            ">- **`T2_shared_commercial` (99.53% of rows / 68,817 rows / 27,377 keys)**: Master commercial schedule shared across PPO and HMO contracts without explicit brand strings.\n"
+            ">\n"
+            "> **Address Attestation**: Address tiers show **cross-source agreement, not proof**.\n"
+            ">- Address verification tiers reflect cross-source physical corroboration (NPPES + CMS DAC + group practice co-membership). "
+            "Comparing directory addresses against the live federal NPI Registry API is an NPPES self-consistency check, not an external gold-standard test.\n"
+            ">- **Strict Physical Verification Share (7.83%)**: Exactly 289 unique NPIs (7.83% of 3,693 active non-zero NPIs) achieve strict cross-source agreement between NPPES and CMS DAC. "
+            "In California managed care, independent solo clinicians contract primarily through capitated IPAs (which do not appear on FFS rate schedules).\n"
+            ">- **Facility-Heavy Rate File Composition**: Over 80.7% of rate-file TINs (2,306 of 2,856) represent Type 2 hospitals, medical groups, and clinics where physicians bill under institutional contracts rather than individual NPI agreements."
         )
 
-    with ins_col2:
-        with st.expander("⚠️ Structural Boundaries & Scientific Integrity", expanded=True):
-            st.markdown(
-                """
-                - **Shared Fee Schedule**: California managed care plans share in-network rate sheets across PPO and HMO contracts.
-                - **Address Agreement != Ground Truth**: Agreement between NPPES and CMS DAC corroborates physical reality but is not an on-site audit.
-                - **Capitated IPA Exclusions**: Independent solo clinicians primarily contract through capitated IPAs not reflected on FFS rate files.
-                """
+    st.markdown("---")
+
+    # -------------------------------------------------------------------------
+    # 6. Core Deliverables & Downloads
+    # -------------------------------------------------------------------------
+    st.subheader("6. Core Deliverables & Downloads")
+    st.markdown("Download official submission artifacts directly from the executive interface:")
+
+    d_col1, d_col2 = st.columns(2)
+    with d_col1:
+        ps_bytes = get_download_file_bytes("final_rates_ps_grain.csv", source_mode)
+        if ps_bytes:
+            st.download_button(
+                label="📥 Download Problem Statement Grain CSV (48,006 rows, 6 cols)",
+                data=ps_bytes,
+                file_name="final_rates_ps_grain.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key="exec_dl_ps_grain",
             )
 
-        # Download executive summary workbook button
+    with d_col2:
         excel_bytes = get_download_file_bytes("summary.xlsx", source_mode)
         if excel_bytes:
             st.download_button(
-                label="📥 Download Executive Summary (summary.xlsx)",
+                label="📥 Download Executive Summary Workbook (summary.xlsx)",
                 data=excel_bytes,
                 file_name="summary.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
+                use_container_width=True,
+                key="exec_dl_summary_xlsx",
             )
         else:
             json_bytes = get_download_file_bytes("summary.json", source_mode)
@@ -331,5 +360,6 @@ def render_executive_view(source_mode: str = "Production outputs", global_filter
                     data=json_bytes,
                     file_name="summary.json",
                     mime="application/json",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="exec_dl_summary_json",
                 )

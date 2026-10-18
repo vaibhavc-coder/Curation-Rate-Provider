@@ -82,9 +82,9 @@ For our final deliverable:
 2. **[03:40 - 03:55] Analyst View & C7 Frontier**:
    - *Action*: Click `🔍 Analyst View` in the sidebar. In the search box, type `99213` (Office Visit). Show the rate distribution histogram, the red median line (\$128.50), the C7 price frontier ranking, and the California regional ZIP3 map.
    - *Presenter Says*: "Moving to the Analyst View, I filter for CPT 99213. Instantly, we see the contract rate distribution, peer median lines, and our Challenge C7 cost-effectiveness frontier ranking providers across California's 19 regional county cohorts—all mapped via zero-latency ZIP3 centroids."
-3. **[03:55 - 04:15] Network & Addresses & Auditor Sample**:
-   - *Action*: Click `🗺️ Network & Addresses`. Scroll down to Section 4: *Auditor Verification Sample*. Click the checkbox `Confirmed Correct` on row 1 to demonstrate real-time agreement percentage recalculation, then gesture to the CSV download button.
-   - *Presenter Says*: "In Network and Addresses, judges can audit our non-circular R1-through-R8 rules and our interactive 40-row manual check sample. Auditors can verify addresses live in the browser, watch the agreement rate update dynamically, and download the annotated audit CSV."
+3. **[03:55 - 04:15] File Quality & Manual Address Audit**:
+   - *Action*: Click `🛡️ File Quality & Audits`. Highlight the 8-metric scorecard, score bridge waterfall, and scroll to Section 5: *Manual Address Audit*. Click the checkbox `Confirmed Correct?` on row 1 to demonstrate real-time agreement percentage recalculation, then gesture to the CSV download button.
+   - *Presenter Says*: "In File Quality & Audits, judges can inspect our 8-metric scorecard, the exact mathematical score bridge, and our interactive 40-row manual check sample. Auditors can verify addresses live in the browser, watch the agreement rate update dynamically, and download the annotated audit CSV."
 
 ---
 

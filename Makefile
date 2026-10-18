@@ -1,4 +1,4 @@
-.PHONY: all setup test run sample phase1 phase2 clean lint app ui doctor
+.PHONY: all setup test run sample phase1 phase2 clean lint app ui doctor verify
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -41,3 +41,6 @@ lint:
 
 clean:
 	rm -rf data/interim/* data/output/* __pycache__ src/ptd/__pycache__ tests/__pycache__ .pytest_cache
+
+verify:
+	PYTHONPATH=src $(PYTEST) -v tests/test_ui.py -k fixtures

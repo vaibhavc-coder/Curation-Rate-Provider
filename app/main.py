@@ -5,8 +5,6 @@ Coordinates modular views across:
 - Executive Overview (app/views/executive.py)
 - Contracting Analyst Workspace (app/views/analyst.py)
 - Raw File Quality & Audits (app/views/files_quality.py)
-- Network Mapping & Address Linkage (app/views/addresses.py)
-- Methodology & Deliverable Downloads (app/views/methodology.py)
 """
 
 from __future__ import annotations
@@ -27,11 +25,9 @@ from app.components import (
     render_top_banner,
 )
 from app.data_access import load_summary_json
-from app.views.addresses import render_addresses_view
 from app.views.analyst import render_analyst_view
 from app.views.executive import render_executive_view
 from app.views.files_quality import render_files_quality_view
-from app.views.methodology import render_methodology_view
 
 # Streamlit Page Configuration
 st.set_page_config(
@@ -52,17 +48,16 @@ def main() -> None:
     source_mode = controls["source_mode"]
     nav_page = controls["nav_page"]
 
-    # 3. Dispatch to View
+    # 3. Dispatch to View (3 core pages with Executive fallback)
     if nav_page == "📊 Executive View":
         render_executive_view(source_mode=source_mode, global_filters=controls)
     elif nav_page == "🔍 Analyst View":
         render_analyst_view(source_mode=source_mode, global_filters=controls)
     elif nav_page == "🛡️ File Quality & Audits":
         render_files_quality_view(source_mode=source_mode, global_filters=controls)
-    elif nav_page == "🗺️ Network & Addresses":
-        render_addresses_view(source_mode=source_mode, global_filters=controls)
-    elif nav_page == "📚 Methodology & Downloads":
-        render_methodology_view(source_mode=source_mode, global_filters=controls)
+    else:
+        # Fallback to Executive View if unrecognized or removed page name is encountered
+        render_executive_view(source_mode=source_mode, global_filters=controls)
 
     # 4. Global Footer with provenance metadata and resident memory
     summary = load_summary_json(source_mode)

@@ -124,17 +124,27 @@ def render_analyst_view(source_mode: str = "Production outputs", global_filters:
         with f_row2_col4:
             max_rows = st.number_input("Max Query Limit", min_value=100, max_value=5000, value=1000, step=100)
 
+    # Determine effective filter values from local controls + sidebar global filters
+    eff_spec = q_spec if q_spec != "ALL" else (global_filters.get("specialty") if global_filters and global_filters.get("specialty") != "ALL" else None)
+    eff_addr = q_addr_status if q_addr_status != "ALL" else (global_filters.get("address_status") if global_filters and global_filters.get("address_status") != "ALL" else None)
+    eff_code_type = global_filters.get("code_type") if global_filters else None
+    eff_billing_class = global_filters.get("billing_class") if global_filters else None
+    eff_entity_type = global_filters.get("entity_type") if global_filters else None
+
     # Execute memory-bounded polars query
     with st.spinner("Fetching matching rates..."):
         df_rates = query_curated_rates_polars(
             source_mode=source_mode,
             billing_code=q_code if q_code else None,
-            specialty=q_spec,
+            specialty=eff_spec,
             tin=q_tin if q_tin else None,
             npi=q_npi,
-            address_status=q_addr_status,
+            address_status=eff_addr,
             network_tier=q_tier,
             outlier_filter=q_outlier,
+            code_type=eff_code_type,
+            billing_class=eff_billing_class,
+            entity_type=eff_entity_type,
             limit=int(max_rows)
         )
 

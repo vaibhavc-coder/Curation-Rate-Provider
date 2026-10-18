@@ -39,17 +39,21 @@ def render_sidebar_controls() -> Dict[str, Any]:
         help="Switch between full production deliverables and lightweight demo fixtures (<250 KB)."
     )
 
-    # Navigation Radio
+    CORE_PAGES = [
+        "📊 Executive View",
+        "🔍 Analyst View",
+        "🛡️ File Quality & Audits",
+    ]
+
+    # Defensive fallback: If session_state holds a removed or invalid page name, revert to Executive View
+    if st.session_state.get("nav_page") not in CORE_PAGES:
+        st.session_state["nav_page"] = CORE_PAGES[0]
+
+    # Navigation Radio (Simplified to exactly 3 core pages)
     nav_page = st.sidebar.radio(
         "Navigation",
-        options=[
-            "📊 Executive View",
-            "🔍 Analyst View",
-            "🛡️ File Quality & Audits",
-            "🗺️ Network & Addresses",
-            "📚 Methodology & Downloads",
-        ],
-        index=0,
+        options=CORE_PAGES,
+        key="nav_page",
     )
 
     st.sidebar.markdown("---")
@@ -57,11 +61,22 @@ def render_sidebar_controls() -> Dict[str, Any]:
 
     opts = load_distinct_filter_options(source_mode)
 
-    # Reset button
+    # Initialize session state filter defaults to ALL
+    filter_keys = [
+        "filter_code_type",
+        "filter_billing_class",
+        "filter_specialty",
+        "filter_address_status",
+        "filter_entity_type",
+    ]
+    for key in filter_keys:
+        if key not in st.session_state:
+            st.session_state[key] = "ALL"
+
+    # Reset button restores every filter to ALL
     if st.sidebar.button("🔄 Reset filters", use_container_width=True):
-        for key in ["filter_code_type", "filter_billing_class", "filter_specialty", "filter_address_status", "filter_entity_type"]:
-            if key in st.session_state:
-                st.session_state[key] = "ALL"
+        for key in filter_keys:
+            st.session_state[key] = "ALL"
         st.rerun()
 
     code_types = ["ALL"] + opts.get("billing_code_types", ["CPT", "HCPCS", "RC"])
@@ -69,6 +84,17 @@ def render_sidebar_controls() -> Dict[str, Any]:
     specialties = ["ALL"] + opts.get("specialties", [])
     address_statuses = ["ALL"] + opts.get("address_statuses", ["Verified", "Probable", "Unverified", "Facility/TIN-level"])
     entity_types = ["ALL", "real_provider", "network_bucket"]
+
+    # Ensure active session state values exist in options, else revert to ALL
+    for k, opt_list in [
+        ("filter_code_type", code_types),
+        ("filter_billing_class", billing_classes),
+        ("filter_specialty", specialties),
+        ("filter_address_status", address_statuses),
+        ("filter_entity_type", entity_types),
+    ]:
+        if st.session_state.get(k) not in opt_list:
+            st.session_state[k] = "ALL"
 
     filter_code_type = st.sidebar.selectbox(
         "Billing Code Type",
