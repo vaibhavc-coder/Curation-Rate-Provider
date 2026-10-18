@@ -272,14 +272,14 @@ Evaluated on a 50,000-row baseline sample (Baseline Quality = 80.00):
   - Across all 1,771 Revenue Code 636 curated keys, **100.0% (1,771 / 1,771) resolve as `IDENTICAL_MULTI_PRICE_MATCH`** with $\text{rate\_spread\_ratio} = 1.00$.
   - Extreme rate dispersion (spread ratio > 3.0) on Revenue Code 636 is reduced from 15.77% down to **0.00%**, proving that pre-tiebreak rate spread was an artifact of conflating distinct HCPCS drug lines under a common UB-04 revenue header.
 - **Overall Rate Reliability Distribution (27,559 Curated Keys)**:
-  - **`HIGH` Reliability ($\text{rate\_spread\_ratio} \le 1.0$)**: **26,528 keys (96.26%)**
-  - **`MEDIUM` Reliability ($1.0 < \text{rate\_spread\_ratio} \le 3.0$)**: **875 keys (3.18%)**
+  - **`HIGH` Reliability ($\text{rate\_spread\_ratio} \le 1.0$)**: **25,466 keys (92.41%)**
+  - **`MEDIUM` Reliability ($1.0 < \text{rate\_spread\_ratio} \le 3.0$)**: **1,937 keys (7.03%)**
   - **`LOW` Reliability ($\text{rate\_spread\_ratio} > 3.0$)**: **156 keys (0.57%)** (flagged with `spread_flag = True` and excluded from peer benchmarks).
 - **Selection Rules Breakdown**:
   - `IDENTICAL_MULTI_PRICE_MATCH`: 14,625 keys (53.07%)
   - `EXACT_UNIQUE_MATCH`: 11,903 keys (43.19%)
   - `MEDIAN_COLLISION_RESOLVED`: 1,031 keys (3.74%)
-- **Facility Placeholder Rows (NPI 0)**: Exactly 5 rate rows across 5 facility TINs carry NPI 0 (`86-1264633`, `86-1158385`, `46-0854874`, `57-3865868`, `47-5029847`). These are retained as organization facility rows with `npi_status="PLACEHOLDER_ZERO"`, linked via TIN evidence only, capped at `Probable`.
+- **Facility Placeholder Rows (NPI 0)**: Exactly 5 rate rows across 5 facility TINs carry NPI 0 (`86-1264633`, `86-1158385`, `46-0854874`, `57-3865868`, `47-5029847`). These are retained as organization facility rows with `npi_status="PLACEHOLDER_ZERO"`, linked via TIN evidence only, capped at `Facility/TIN-level`.
 - **Trace Verification**: 25/25 stratified sample rows verified via standalone `scripts/trace_row.py` (0 imports from `src/ptd`), documented in `docs/trace_report.csv`.
 - **Kaiser / IPA Audit**: Top 25 review-flagged entities documented in `docs/review_flags_top25.csv`.
 
@@ -362,46 +362,50 @@ To ensure strict adherence to Ground Rule 2 (never invent data), all provider id
 
 #### Reconciled Status Distribution across Output Files
 
-| Dimension | Strict V1 Verified (Multi-Source Agreement) | Full V2 Verified (Recent High-Trust + TIN Corroboration) | Probable (Single Source / Modal TIN) | Unverified (Stale >3y / Deactivated) | Total Population |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Unique Non-Zero NPIs** | **289 (7.83%)** | **493 (13.35%)** | **1,234 (33.41%)** | **1,966 (53.24%)** | **3,693 (100.0%)** |
-| - *Type 1 Individuals* | 202 (31.51%) | 227 (35.41%) | 204 (31.83%) | 210 (32.76%) | 641 (100.0%) |
-| - *Type 2 Organizations* | 87 (2.86%) | 266 (8.74%) | 1,025 (33.67%) | 1,753 (57.59%) | 3,044 (100.0%) |
-| - *Unknown / Deactivated* | 0 (0.00%) | 0 (0.00%) | 5 (62.50%) | 3 (37.50%) | 8 (100.0%) |
-| **Unique Billing TINs** | **270 (9.45%)** | **336 (11.76%)** | **988 (34.59%)** | **1,532 (53.64%)** | **2,856 (100.0%)** |
-| **Primary Curated Rate Keys** | **3,770 (13.68%)** | **7,775 (28.21%)** | **6,428 (23.32%)** | **13,356 (48.46%)** | **27,559 (100.0%)** |
+| Dimension | Strict V1 Verified (Multi-Source Agreement) | Full V2 Verified (Recent High-Trust + TIN Corroboration) | Probable (Single Source Active CA Practice) | Unverified (Non-CA / Stale / Deactivated) | Facility/TIN-level (Placeholder NPI 0) | Total Population |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Unique Non-Zero NPIs** | **289 (7.83%)** | **493 (13.35%)** | **3,086 (83.56%)** | **114 (3.09%)** | **—** | **3,693 (100.0%)** |
+| - *Type 1 Individuals* | 202 (31.51%) | 227 (35.41%) | 409 (63.81%) | 5 (0.78%) | — | 641 (100.0%) |
+| - *Type 2 Organizations* | 87 (2.86%) | 266 (8.74%) | 2,677 (87.94%) | 101 (3.32%) | — | 3,044 (100.0%) |
+| - *Unknown / Deactivated* | 0 (0.00%) | 0 (0.00%) | 0 (0.00%) | 8 (100.0%) | — | 8 (100.0%) |
+| **Unique Billing TINs** | **270 (9.45%)** | **336 (11.76%)** | **2,507 (87.78%)** | **13 (0.46%)** | **—** | **2,856 (100.0%)** |
+| **Primary Curated Rate Keys** | **3,770 (13.68%)** | **7,775 (28.21%)** | **18,780 (68.14%)** | **999 (3.63%)** | **5 (0.02%)** | **27,559 (100.0%)** |
+
+> [!NOTE]
+> **Audit Note on R3 Rule Evolution & Tier Rebalancing**:
+> An exploratory prototype applied a naive 3-year age threshold that demoted any uncorroborated NPPES address to Unverified regardless of active practice status, temporarily shifting 1,852 NPIs (leaving Probable at 1,234 and Unverified at 1,966). Because empirical staleness measurement demonstrated that active California NPPES practice addresses retain >60% physical agreement with CMS DAC across all age buckets (Section 7.6), production rule R3 applies a recency penalty to confidence scores while preserving active California practice locations in the `Probable` tier. The production distribution settles at **3,086 Probable (83.56%)** and **114 Unverified (3.09%)**, matching `summary.json` and `coverage_report.json` exactly.
 
 ### 7.4 Conflict Rules R1 Through R8 Execution
 Every linkage decision applies explicit written conflict rules, logged with exact fire counts:
 
 | Rule ID | Rule Name & Logic | Fires | Destination & Status Impact |
 | :--- | :--- | :---: | :--- |
-| **R1** | **Multi-Address Retention**: Multiple valid practicing locations per provider are kept as separate uncollapsed rows, ranked by score. | **1,563** | Preserves multi-site clinical practice networks. |
+| **R1** | **Multi-Address Retention**: Multiple valid practicing locations per provider are kept as separate uncollapsed rows, ranked by score. | **1,626** | Preserves multi-site clinical practice networks. |
 | **R2** | **Multi-TIN Separation**: The same NPI contracted under several TINs produces separate links per TIN. | **73** | Maintains contract-entity integrity. |
-| **R3** | **Stale NPPES Degradation**: NPPES address older than 3 years with no independent corroboration is downgraded to Unverified. | **370** | Prevents false confidence on outdated records. |
+| **R3** | **Stale NPPES Recency Penalty**: NPPES address older than 3 years with no independent corroboration receives recency penalty. | **2,874** | Preserves active CA practice locations at Probable; demotes non-CA/inactive to Unverified. |
 | **R4** | **Deactivated NPI Guard**: Applies strictly to NPIs deactivated and NOT reactivated (7 NPIs). Status capped at Unverified. | **7** | 10 reactivated NPIs have active status restored. |
 | **R5** | **Non-CA Residency Downgrade**: Out-of-state practice locations for a California network provider are downgraded one tier and flagged. | **493** | Verified -> Probable; Probable -> Unverified. |
-| **R6** | **Mailing-Only Cap**: Addresses originating solely from mailing fields are capped at Probable. | **1,138** | Prevents non-clinical billing addresses from being Verified. |
-| **R7** | **Disagreement Ranking**: Disagreeing candidate addresses are retained, ranked by score; lower candidates keep their own status. | **1,563** | Full audit visibility without artificial data loss. |
-| **R8** | **NPI 0 TIN-Level Inference**: NPI 0 placeholder rows are linked strictly via modal TIN co-membership, capped at Probable. | **5** | Succeeded across 5 facility organizations. |
+| **R6** | **Mailing-Only Cap**: Addresses originating solely from mailing fields are capped at Probable. | **1,127** | Prevents non-clinical billing addresses from being Verified. |
+| **R7** | **Disagreement Ranking**: Disagreeing candidate addresses are retained, ranked by score; lower candidates keep their own status. | **664** | Full audit visibility without artificial data loss. |
+| **R8** | **NPI 0 TIN-Level Inference**: NPI 0 placeholder rows are linked strictly via modal TIN co-membership, capped at Facility/TIN-level. | **5** | Succeeded across 5 facility organizations. |
 | **UNMATCHED** | **Unmatched in NPPES**: Documented NPI missing from official dissemination files (`1342464355`). | **1** | Capped at Unverified. |
 
 ### 7.5 Primary Address Uniqueness
 - Each of the **3,739 unique (NPI, TIN) pairs** is evaluated once, and exactly one practicing address receives `address_rank = 1` and `is_primary_address = True`.
-- When joining curated rate keys (21,608 rows) to primary practicing addresses, the joined output count equals **exactly 21,608 rows** (1:1 join).
+- When joining curated rate keys (27,559 rows) to primary practicing addresses, the joined output count equals **exactly 27,559 rows** (1:1 join).
 
 ### 7.6 Empirical Staleness vs Industry Claim
-We measured the empirical agreement rate between NPPES Primary practice addresses and the independent CMS Doctors & Clinicians National File across 301 overlapping California providers, stratified by NPPES Last Update age:
+We measured the empirical agreement rate between NPPES Primary practice addresses and the independent CMS Doctors & Clinicians National File across 302 overlapping California providers, stratified by NPPES Last Update age:
 
-| NPPES Last Update Age Bucket | CMS DAC Providers Evaluated | Agreed on Exact Address Key | Empirical Agreement Rate |
-| :--- | :---: | :---: | :---: |
-| **< 1 year** | 30 | 19 | **63.33%** |
-| **1 - 3 years** | 55 | 39 | **70.91%** |
-| **3 - 5 years** | 37 | 23 | **62.16%** |
-| **> 5 years** | 179 | 109 | **60.89%** |
-| **OVERALL EMPIRICAL BASELINE** | **301** | **190** | **63.12%** |
+| NPPES Last Update Age Bucket | CMS DAC Providers Evaluated | Agreed on Exact Address Key | Empirical Agreement Rate | 95% Wilson Confidence Interval |
+| :--- | :---: | :---: | :---: | :---: |
+| **< 1 year** | 31 | 20 | **64.52%** | [46.9%, 78.9%] |
+| **1 - 3 years** | 54 | 38 | **70.37%** | [57.2%, 80.9%] |
+| **3 - 5 years** | 39 | 23 | **58.97%** | [43.4%, 72.9%] |
+| **> 5 years** | 178 | 109 | **61.24%** | [53.9%, 68.1%] |
+| **OVERALL EMPIRICAL BASELINE** | **302** | **190** | **62.91%** | **[57.3%, 68.2%]** |
 
-**Clinical & Actuarial Finding**: Rather than directory accuracy decaying from 100% to near-zero as time elapses, empirical agreement remains remarkably stable between 60.89% and 70.91% across all age buckets. Directory inaccuracy in commercial PPO networks is primarily caused by **unmodeled multi-site clinical mobility** (providers practicing at 2 to 5 facility sites simultaneously) rather than physical site obsolescence.
+**Clinical & Actuarial Finding**: Rather than directory accuracy decaying from 100% to near-zero as time elapses, empirical agreement remains remarkably stable between 58.97% and 70.37% across all age buckets. Directory inaccuracy in commercial PPO networks is primarily caused by **unmodeled multi-site clinical mobility** (providers practicing at 2 to 5 facility sites simultaneously) rather than physical site obsolescence.
 
 ### 7.7 Specialty Mapping & Plausibility Breakdown
 - **Mapping Breakdown**:
@@ -569,7 +573,7 @@ Because the Wilson 95% confidence intervals overlap across all age buckets, the 
 | **Governance Executive Summary** | JSON | `data/output/summary.json` | Master | Full pipeline metadata, coverage, grading, and performance |
 | **Governance Executive Summary** | XLSX | `data/output/summary.xlsx` | Master | Formatted executive sheet with all 28 core metrics |
 | **File Quality Scorecard** | CSV | `data/output/file_scores.csv` | 3 | TiC v2.0.0 raw file grading (Quality: 91.14, Combined: 82.21, Grade B) |
-| **Mutation Testing Audit** | CSV | `data/output/mutation_test_report.csv` | 42 | 6 isolated corruption scenarios across 7 quality metrics |
+| **Mutation Testing Audit** | CSV | `data/output/mutation_test_report.csv` | 48 | 6 isolated corruption scenarios across 8 quality metrics |
 | **Address Candidates Audit** | Parquet | `data/interim/address_candidates.parquet` | 9,681 | All geocoded candidate practice locations ingested |
 | **Address Links Parquet** | Parquet | `data/interim/npi_tin_address_links.parquet` | 6,992 | Multi-site address linkages with R1-R8 rule tracking |
 | **Trace Sample Report** | CSV | `docs/trace_report.csv` | 25 | End-to-end price lineage trace from raw input to output |
