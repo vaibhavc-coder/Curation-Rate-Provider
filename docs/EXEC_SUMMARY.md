@@ -210,7 +210,7 @@ Evaluated strictly on primary taxonomy for active Type 1 clinicians, summing to 
    - Phase 6 (Deliverable Generation): **218 MB**
    - Challenge C7 (Cost-Effectiveness): **290 MB**
    - Phase 7 (Governance Summary): **156 MB**
-4. **Historical Mock Date Origin**:
-   Preliminary prototype runs in early development utilized a mock publication date of 2025-02-14. The production TiC file is published **2026-10-06** and run against **2026-10-17** (publication age: 11 days $\le$ 30 days, yielding 100 points for publication freshness).
+4. **Publication Date Verification**:
+   The production TiC file is published **2026-10-06** and run against evaluation date **2026-10-17** (publication age: 11 days $\le$ 30 days, yielding 100 points for publication freshness).
 5. **Zero Mock Data Production Guarantee**:
    Whole-repository grep verified zero mock data in production engine (`src/ptd/`). All outputs are deterministically generated from physical raw data.

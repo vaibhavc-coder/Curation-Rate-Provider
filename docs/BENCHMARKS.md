@@ -77,7 +77,7 @@ The pipeline was executed on a second, distinct payer rate file: `2026-09-30_cen
 ## 5. Clean-Room Reproduction Audit (From Fresh Git Clone)
 
 To guarantee complete reproducibility without developer workspace artifacts, a clean-room test was executed in `/tmp/ptd_clean_room`:
-1. Cloned repo from scratch (`git clone`).
+1. Cloned repo anew (`git clone`).
 2. Built clean virtualenv from `requirements.txt`.
 3. Ran test suite: **55 tests passed in 1.34s**.
 4. Executed full pipeline: `PYTHONPATH=src .venv/bin/python run_pipeline.py --all --cost-effectiveness`.

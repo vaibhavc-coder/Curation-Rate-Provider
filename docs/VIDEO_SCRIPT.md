@@ -63,7 +63,7 @@ We engineered a strictly non-circular entity resolution engine with 4 mutually e
 - **Unverified**: 2,621 rows (3.79%) / 489 links (7.00%) comprising non-CA addresses or historical registrations.
 - **Facility/TIN-level**: 5 rows (0.01%) / 5 links (0.07%) for facility-only fee rows, capped strictly at facility level.
 
-We evaluated a stratified sample of 325 NPIs against the live federal NPI Registry API as an NPPES self-consistency baseline (84.0% overall agreement; Unverified 99.0%, Verified 84.2%, Probable 71.5%, where Unverified's high score reflects identical historical NPPES registration addresses). In addition, CMS Doctors & Clinicians corroboration validated practicing locations with 100% precision on Verified records, and CMS Provider Data Catalog independently validated 985 Type 2 hospital rows. We also generated `manual_check_sample.csv` with a balanced 40-row sample for external review.
+We evaluated a stratified sample of 325 NPIs against the live federal NPI Registry API as an NPPES self-consistency baseline (84.0% overall agreement; Unverified 99.0%, Verified 84.2%, Probable 71.5%, where Unverified's high score reflects identical historical NPPES registration addresses). In addition, CMS Doctors & Clinicians corroboration validated practicing locations with 100% cross-source agreement on Verified records, and CMS Provider Data Catalog independently validated 985 Type 2 hospital rows. We also generated `manual_check_sample.csv` with a balanced 40-row sample for external review.
 
 For our final deliverable:
 - **Sheet 1 & `final_rates_ps_grain.csv`**: Exactly **48,006 unique rows** on the required `(NPI, TIN, Address, Billing Code)` grain, collapsed via deterministic median rate aggregation with zero duplicate keys.
