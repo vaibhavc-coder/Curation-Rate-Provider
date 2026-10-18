@@ -11,7 +11,7 @@
 | Package Archive | Size | SHA-256 Checksum | Rubric Criterion / Deliverable Purpose |
 | :--- | :--- | :--- | :--- |
 | **`ptd_deliverables.zip`** | 19.03 MB | `5b8728ca7c5367603160fca258f3d572078bebee3d58e5e76f4532bcd5e11462` | Complete Submission Package (All Curated Datasets & Governance Documentation) |
-| **`ptd_code.zip`** | 242.9 KB | `2533aa199adcee3f41deb23c9fb9103575d9b8e83006c9377488c2b98fa8d113` | Source Code & Test Suite (Clean Git Archive of Entire Pipeline, Brownie 7a UI, & 65 Unit Tests) |
+| **`ptd_code.zip`** | 263.6 KB | `643c89fe9cad0856fb8784cdb34e895c69df90954c3025a959367e787c5d45cc` | Source Code & Test Suite (Clean Git Archive of Entire Pipeline, Brownie 7a UI, & 65 Unit Tests) |
 
 ---
 
