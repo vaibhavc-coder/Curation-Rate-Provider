@@ -58,7 +58,7 @@ We also audited rate outliers: flagging CPT 96372 at \$1,907.88 and CPT 81003 at
 "Address linkage is where ordinary pipelines produce misleading numbers. Because 97% of provider groups in Centene’s network have only 1 NPI, treating TIN co-membership as independent corroboration is circular.
 
 We engineered a strictly non-circular entity resolution engine with 4 mutually exclusive tiers summing to exactly 100.00%:
-- **Verified**: 8,340 rows (12.06%) / 517 unique provider-address links (7.39%), corroborated across $\ge 2$ independent source groups (NPPES + CMS DAC / Provider Data Catalog; 289 active NPIs).
+- **Verified**: 8,340 rows (12.06%) / 517 unique provider-address links (7.39%), corroborated by multi-source agreement or TIN co-membership (493 unique NPIs; of which 289 have strict cross-source agreement across NPPES + CMS DAC).
 - **Probable**: 58,178 rows (84.14%) / 5,981 links (85.54%) backed by active California practice locations in NPPES.
 - **Unverified**: 2,621 rows (3.79%) / 489 links (7.00%) comprising non-CA addresses or historical registrations.
 - **Facility/TIN-level**: 5 rows (0.01%) / 5 links (0.07%) for facility-only fee rows, capped strictly at facility level.

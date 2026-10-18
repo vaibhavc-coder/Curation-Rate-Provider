@@ -123,7 +123,7 @@ Provider physical practicing locations are classified into mutually exclusive ti
 
 ### Strict V1 Physical Agreement Count:
 - **Verified-Strict (V1)**: Requires physical location agreement between independent source groups (NPPES + CMS DAC).
-- **Exact Count**: Exactly **289 unique NPIs** (**202 Type 1 clinicians**, **87 Type 2 organizations**), representing **7.82%** of all 3,693 active non-zero NPIs in the rate file.
+- **Exact Count**: Exactly **289 unique NPIs** (**202 Type 1 clinicians**, **87 Type 2 organizations**), representing **7.83%** of all 3,693 active non-zero NPIs in the rate file.
 
 ### Live Federal NPI Registry API Evaluation (Self-Consistency Baseline):
 Validation of 325 sampled NPIs against the live federal NPI Registry API endpoint (`https://npiregistry.cms.hhs.gov/api/`) yielded:
