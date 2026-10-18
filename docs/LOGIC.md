@@ -587,7 +587,7 @@ Because the Wilson 95% confidence intervals overlap across all age buckets, the 
 | **Validation Script** | Python | `scripts/validate_sample.py` | Script | Production-grade dual-grain automated sanity check |
 | **Video Walkthrough Script** | Markdown | `docs/VIDEO_SCRIPT.md` | Doc | 5-minute hackathon judge video presentation script |
 | **Executive Summary Document** | Markdown | `docs/EXEC_SUMMARY.md` | Doc | 2-page executive summary covering architecture and limitations |
-| **Throughput Benchmarks Report**| Markdown | `docs/BENCHMARKS.md` | Doc | System throughput benchmarks and memory governance report |
+
 
 
 

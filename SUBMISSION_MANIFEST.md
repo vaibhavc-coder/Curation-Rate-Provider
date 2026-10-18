@@ -43,5 +43,5 @@
 - **C5 Non-Circular Address Linkage (35 pts)**: Verified via `manual_check_sample.csv` and `docs/LOGIC.md` Section 6. 100% cross-source physical agreement on Strict Verified tier; 4 mutually exclusive tiers; group TIN corroboration.
 - **C6 Production Deliverables & Schemas (15 pts)**: Verified via `final_curated_rates.xlsx`, `final_rates_ps_grain.csv` (48,006 rows, 0 duplicate keys), and `final_curated_rates.parquet` (69,144 rows, 45 columns).
 - **C7 Cost-Effectiveness Frontier & Brownie 7a UI**: Evaluated across 19 regional cohorts; provider efficiency index computed in `docs/COST_EFFECTIVENESS.md` and interactive Streamlit modular dashboard (`app/main.py`).
-- **Engineering Scalability & Quality (5 pts)**: 65 unit tests passing; zero hardcoded paths; peak memory bounded under 4.58 GB during Polars tie-breaking (~250 MB during streaming ingestion, < 280 MB during Streamlit app).
+
 
