@@ -33,16 +33,8 @@ class RateStreamProfiler:
         self.duckdb_path = self.interim_dir / "provider_references.duckdb"
 
     def get_rate_file_path(self) -> Path:
-        """Find the target rate file dynamically from config pattern or fallback."""
-        pat = self.config.scope.get("rate_file_pattern", "*healthnet-ca*.json") if isinstance(self.config.scope, dict) else "*healthnet-ca*.json"
-        candidates = list(self.raw_dir.glob(pat))
-        if not candidates:
-            candidates = list(self.raw_dir.glob("*healthnet-ca*.json"))
-        if not candidates:
-            candidates = list(self.raw_dir.glob("*in-network*.json"))
-        if not candidates:
-            raise FileNotFoundError(f"Rate file not found in {self.raw_dir}")
-        return candidates[0]
+        """Find the target rate file dynamically via DataLocator."""
+        return self.config.locator.get_path("healthnet_ca_rate_file", required=True)
 
     def index_provider_references(self, rate_file: Path) -> Dict[str, Any]:
         """First pass / top-level stream: index provider_references into DuckDB & Parquet."""
@@ -84,7 +76,7 @@ class RateStreamProfiler:
         records_to_insert = []
 
         batch_size = 500
-        with open(rate_file, "rb") as f:
+        with self.config.locator.open_readonly(rate_file, "rb") as f:
             items = ijson.items(f, "provider_references.item", use_float=True)
             for r in items:
                 total_references += 1
@@ -196,7 +188,7 @@ class RateStreamProfiler:
         rate_values = []
         distinct_codes = set()
 
-        with open(rate_file, "rb") as f:
+        with self.config.locator.open_readonly(rate_file, "rb") as f:
             items = ijson.items(f, "in_network.item", use_float=True)
             for item in items:
                 total_items += 1

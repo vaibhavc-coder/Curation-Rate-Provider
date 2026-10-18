@@ -1,4 +1,4 @@
-.PHONY: all setup test run sample phase1 phase2 clean lint app ui
+.PHONY: all setup test run sample phase1 phase2 clean lint app ui doctor
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -17,6 +17,9 @@ test:
 
 run:
 	PYTHONPATH=src $(PYTHON) run_pipeline.py --all
+
+doctor:
+	$(PYTHON) scripts/check_inputs.py
 
 phase1:
 	PYTHONPATH=src $(PYTHON) run_pipeline.py --phase 1

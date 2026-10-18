@@ -11,3 +11,4 @@ __pycache__/
 .DS_Store
 *.zip
 *.egg-info/
+config.local.yaml

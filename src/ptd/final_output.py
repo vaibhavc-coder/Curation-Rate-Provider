@@ -165,13 +165,9 @@ class FinalOutputGenerator:
 
     def get_source_file_name(self) -> str:
         """Get the basename of the raw rate file."""
-        pat = self.config.scope.get("rate_file_pattern", "*healthnet-ca*.json") if isinstance(self.config.scope, dict) else "*healthnet-ca*.json"
-        candidates = list(self.raw_dir.glob(pat))
-        if candidates:
-            return candidates[0].name
-        candidates = list(self.raw_dir.glob("*healthnet-ca*.json"))
-        if candidates:
-            return candidates[0].name
+        rate_file = self.config.locator.get_path("healthnet_ca_rate_file", required=False)
+        if rate_file:
+            return rate_file.name
         return "2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json"
 
     def run(self) -> Dict[str, Any]:
@@ -220,8 +216,8 @@ class FinalOutputGenerator:
 
         # Load HiLabs Spec-Proc Weights for exact row-level procedure plausibility check
         spec_proc_weights = defaultdict(set)
-        hilabs_path = self.config.reference_dir / "Rate_Benchmarking_Individual_Weights_Hackathon.xlsx"
-        if hilabs_path.exists():
+        hilabs_path = self.config.locator.get_path("hilabs_workbook", required=False)
+        if hilabs_path and hilabs_path.exists():
             try:
                 wb = openpyxl.load_workbook(hilabs_path, data_only=True)
                 if "Spec-Proc Weights" in wb.sheetnames:

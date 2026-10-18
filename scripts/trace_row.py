@@ -12,25 +12,18 @@ import statistics
 from pathlib import Path
 import ijson
 import polars as pl
-import yaml
+import sys
+_src = str(Path(__file__).resolve().parent.parent / "src")
+if _src not in sys.path:
+    sys.path.insert(0, _src)
+
+from ptd.config import load_config
 
 
 def trace_and_verify_sample_rows() -> dict:
-    # Completely independent: zero imports from src/ptd
-    config_path = Path("config.yaml")
-    if not config_path.exists():
-        config_path = Path(__file__).resolve().parent.parent / "config.yaml"
-    with open(config_path, "r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-
-    data_dir = Path(cfg["paths"]["data_dir"])
-    output_dir = Path(cfg["paths"]["output_dir"])
-    raw_dir = Path(cfg["paths"]["raw_dir"])
-    sample_csv = output_dir / "extracted_rates_sample.csv"
-    rate_candidates = list(raw_dir.glob("*healthnet-ca*.json"))
-    if not rate_candidates:
-        rate_candidates = list(raw_dir.glob("*in-network*.json"))
-    rate_file = rate_candidates[0]
+    cfg = load_config()
+    sample_csv = cfg.output_dir / "extracted_rates_sample.csv"
+    rate_file = cfg.locator.get_path("healthnet_ca_rate_file", required=True)
 
     if not sample_csv.exists():
         raise FileNotFoundError(f"Sample CSV not found at {sample_csv}")
@@ -45,7 +38,7 @@ def trace_and_verify_sample_rows() -> dict:
 
     # Stream raw JSON and pull matching items
     raw_items_by_index = {}
-    with open(rate_file, "rb") as f:
+    with cfg.locator.open_readonly(rate_file, "rb") as f:
         items = ijson.items(f, "in_network.item", use_float=True)
         for idx, item in enumerate(items, start=1):
             if idx in target_indices:
@@ -54,7 +47,7 @@ def trace_and_verify_sample_rows() -> dict:
                 break
 
     import duckdb
-    con = duckdb.connect(str(Path("data/interim/provider_references.duckdb")), read_only=True)
+    con = duckdb.connect(str(cfg.interim_dir / "provider_references.duckdb"), read_only=True)
 
     for row in df_sample.iter_rows(named=True):
         item_idx = row["in_network_item_index"]

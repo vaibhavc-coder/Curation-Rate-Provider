@@ -146,7 +146,7 @@ class FileGrader:
         self.output_dir = config.output_dir
         self.docs_dir = config.docs_dir
         self.reference_dir = config.reference_dir
-        self.hilabs_workbook_path = self.reference_dir / "Rate_Benchmarking_Individual_Weights_Hackathon.xlsx"
+        self.hilabs_workbook_path = self.config.locator.get_path("hilabs_workbook", required=False)
         self.proc_weights = load_hilabs_benchmark_weights(self.hilabs_workbook_path)
 
     def evaluate_quality_metrics(

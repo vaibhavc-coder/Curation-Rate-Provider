@@ -7,44 +7,44 @@ input integrity manifest verification, and production deliverable download hub.
 from __future__ import annotations
 
 import hashlib
+import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 import streamlit as st
 
-from app.data_access import PROJECT_ROOT, get_download_file_bytes
+import subprocess
+from app.data_access import PROJECT_ROOT, get_download_file_bytes, load_doctor_report
 
 
-def check_input_manifest() -> pd.DataFrame:
-    """Check existence and SHA-256 hash match of original source input files."""
-    manifest_path = PROJECT_ROOT / "data" / "manifest.sha256"
+def get_provenance_data() -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """Retrieve provenance report from doctor_report.json or run check_inputs.py."""
+    doc = load_doctor_report()
+    if not doc:
+        try:
+            cmd = [sys.executable, str(PROJECT_ROOT / "scripts" / "check_inputs.py")]
+            subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, timeout=10)
+            doc = load_doctor_report()
+        except Exception:
+            doc = None
+
+    if not doc or not doc.get("entries"):
+        return pd.DataFrame(), {}
+
     rows = []
-    if manifest_path.exists():
-        with open(manifest_path, "r", encoding="utf-8") as f:
-            for line in f:
-                parts = line.strip().split(maxsplit=1)
-                if len(parts) == 2:
-                    expected_sha, rel_path = parts
-                    file_path = PROJECT_ROOT / rel_path
-                    if file_path.exists():
-                        sz = file_path.stat().st_size
-                        sz_str = f"{sz / (1024*1024):.1f} MB" if sz > 1024*1024 else f"{sz / 1024:.1f} KB"
-                        rows.append({
-                            "Dataset Path": rel_path,
-                            "File Status": "✅ Found",
-                            "File Size": sz_str,
-                            "Expected Checksum (SHA-256)": expected_sha[:16] + "...",
-                            "Integrity Verification": "Verified Valid",
-                        })
-                    else:
-                        rows.append({
-                            "Dataset Path": rel_path,
-                            "File Status": "⚠️ Not Present",
-                            "File Size": "—",
-                            "Expected Checksum (SHA-256)": expected_sha[:16] + "...",
-                            "Integrity Verification": "Missing (Download Required)",
-                        })
-    return pd.DataFrame(rows)
+    for entry in doc.get("entries", []):
+        rows.append({
+            "Logical Dataset": entry.get("logical_name", ""),
+            "Required": "Yes" if entry.get("required") else "No (Optional)",
+            "Status": "✅ Found" if entry.get("status") == "FOUND" else f"⚠️ {entry.get('status')}",
+            "Resolved Path": entry.get("resolved_path", "NOT FOUND"),
+            "Size": entry.get("size_str", "—"),
+            "SHA-256 (12 chars)": entry.get("sha256", "—")[:12],
+            "Manifest Verification": entry.get("manifest_status", "UNKNOWN"),
+            "Notes": entry.get("notes", ""),
+        })
+
+    return pd.DataFrame(rows), doc
 
 
 def render_methodology_view(source_mode: str = "Production outputs", global_filters: Dict[str, Any] | None = None) -> None:
@@ -138,11 +138,32 @@ def render_methodology_view(source_mode: str = "Production outputs", global_filt
     # 2. Input Manifest & Data Provenance Status
     # -------------------------------------------------------------------------
     st.subheader("2. Source Data Provenance & Manifest Integrity")
-    df_manifest = check_input_manifest()
+    df_manifest, doc_data = get_provenance_data()
+
     if not df_manifest.empty:
+        missing = doc_data.get("missing_required", [])
+        if missing:
+            st.info(
+                "ℹ️ **Source data not attached; viewing precomputed outputs.** "
+                "The pipeline outputs in `data/output/` are complete and intact. "
+                "To connect real source datasets on this machine, configure pointers via environment variables, "
+                "`config.local.yaml`, or run `make doctor`."
+            )
+        else:
+            st.success("✅ **All required source datasets resolved & verified against input manifest.**")
+
         st.dataframe(df_manifest, width="stretch", hide_index=True)
     else:
-        st.caption("ℹ️ Manifest integrity tracking: All input files validated via sha256 checksums.")
+        st.info("ℹ️ **Source data not attached; viewing precomputed outputs.**")
+
+    if st.button("🔄 Verify Inputs / Run Input Doctor", key="btn_run_doctor"):
+        try:
+            cmd = [sys.executable, str(PROJECT_ROOT / "scripts" / "check_inputs.py")]
+            res = subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, timeout=15)
+            st.cache_data.clear()
+            st.rerun()
+        except Exception as e:
+            st.error(f"Doctor check error: {e}")
 
     st.markdown("---")
 

@@ -200,8 +200,8 @@ class SourceManager:
         status_matrix = {}
 
         # 1. NPPES Primary Practice (Local zip)
-        zip_path = self.reference_dir / "NPPES_Data_Dissemination_October_2026_V2.zip"
-        if zip_path.exists():
+        zip_path = self.config.locator.get_path("nppes_zip", required=False)
+        if zip_path and zip_path.exists():
             status_matrix["nppes_primary"] = {
                 "source_id": "nppes_primary",
                 "name": "NPPES npidata Primary Practice Location",
@@ -362,7 +362,7 @@ class NPPESStreamer:
 
     def __init__(self, config: PipelineConfig):
         self.config = config
-        self.zip_path = config.reference_dir / "NPPES_Data_Dissemination_October_2026_V2.zip"
+        self.zip_path = config.locator.get_path("nppes_zip", required=True)
 
     def extract_target_npis(self, target_npis: Set[int]) -> Dict[str, Any]:
         """Extract all target NPIs from npidata and pl_pfile in a single streaming pass."""
@@ -376,8 +376,12 @@ class NPPESStreamer:
         logger.info(f"Streaming NPPES zip for {len(target_bytes)} target NPIs...")
 
         with zipfile.ZipFile(self.zip_path, "r") as zf:
+            namelist = zf.namelist()
+            npidata_name = next((n for n in namelist if "npidata_pfile" in n and n.endswith(".csv")), "npidata_pfile_20050523-20261011.csv")
+            pl_pfile_name = next((n for n in namelist if "pl_pfile" in n and n.endswith(".csv")), "pl_pfile_20050523-20261011.csv")
+
             # 1. npidata
-            with zf.open("npidata_pfile_20050523-20261011.csv", "r") as f:
+            with zf.open(npidata_name, "r") as f:
                 header_line = f.readline().decode("utf-8", errors="replace")
                 headers = next(csv.reader(io.StringIO(header_line)))
                 col = {name: idx for idx, name in enumerate(headers)}
@@ -461,7 +465,7 @@ class NPPESStreamer:
                         }
 
             # 2. pl_pfile (Secondary Practice Locations)
-            with zf.open("pl_pfile_20050523-20261011.csv", "r") as f:
+            with zf.open(pl_pfile_name, "r") as f:
                 header_line = f.readline().decode("utf-8", errors="replace")
                 headers = next(csv.reader(io.StringIO(header_line)))
                 pcol = {name: idx for idx, name in enumerate(headers)}
@@ -562,8 +566,8 @@ class TaxonomySpecialtyMapper:
 
     def __init__(self, config: PipelineConfig):
         self.config = config
-        self.nucc_path = config.reference_dir / "nucc_taxonomy.csv"
-        self.hilabs_workbook_path = config.reference_dir / "Rate_Benchmarking_Individual_Weights_Hackathon.xlsx"
+        self.nucc_path = config.locator.get_path("nucc_taxonomy", required=True)
+        self.hilabs_workbook_path = config.locator.get_path("hilabs_workbook", required=False)
         self.nucc_map: Dict[str, Dict[str, str]] = {}
         self.hilabs_xwalk: Dict[str, Dict[str, str]] = {}
         self.spec_proc_weights: Dict[str, Set[str]] = defaultdict(set)
@@ -584,7 +588,7 @@ class TaxonomySpecialtyMapper:
                     }
 
         # 2. HiLabs Taxonomy-Spec Xwalk & Spec-Proc Weights
-        if self.hilabs_workbook_path.exists():
+        if self.hilabs_workbook_path and self.hilabs_workbook_path.exists():
             try:
                 wb = openpyxl.load_workbook(self.hilabs_workbook_path, data_only=True)
                 if "Taxonomy-Spec Xwalk" in wb.sheetnames:
@@ -799,8 +803,8 @@ class AddressLinkEngine:
             })
 
         # Source 4: CMS Doctors and Clinicians Dataset (Independent Group 2)
-        cms_dac_path = self.reference_dir / "cms_dac_target_npis.parquet"
-        if cms_dac_path.exists():
+        cms_dac_path = self.config.locator.get_path("cms_dac", required=False)
+        if cms_dac_path and cms_dac_path.exists():
             df_dac = pl.read_parquet(cms_dac_path)
             for dac_row in df_dac.iter_rows(named=True):
                 std_dac = self.standardizer.standardize(
@@ -819,8 +823,8 @@ class AddressLinkEngine:
                 })
 
         # Source 5: CMS Hospital General Information (Independent Group 2 for Type 2 Organizations)
-        hosp_path = self.reference_dir / "hospital_general_information.csv"
-        if hosp_path.exists():
+        hosp_path = self.config.locator.get_path("hospital_general_info", required=False)
+        if hosp_path and hosp_path.exists():
             try:
                 df_hosp = pl.read_csv(hosp_path, infer_schema_length=10000, ignore_errors=True)
                 ca_hosp = df_hosp.filter(pl.col("State") == "CA")

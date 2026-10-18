@@ -171,35 +171,9 @@ def run_phase_7(config) -> dict:
     return result
 
 
-def stage_input_files_if_needed(config):
-    """Ensure data/index and data/raw contain required input files from config."""
-    import shutil
-    from pathlib import Path
-    config.index_dir.mkdir(parents=True, exist_ok=True)
-    config.raw_dir.mkdir(parents=True, exist_ok=True)
-    orig = getattr(config, "raw_config", {}) or {}
-    sources = orig.get("original_input_sources", {})
-
-    downloads_dir = Path.home() / "Downloads"
-    if downloads_dir.exists():
-        for p in downloads_dir.glob("*_index*.json"):
-            if "(1)" not in p.name:
-                target = config.index_dir / p.name
-                if not target.exists():
-                    try:
-                        target.symlink_to(p)
-                    except OSError:
-                        shutil.copy(p, target)
-
-    if not list(config.raw_dir.glob("*.json")):
-        p = sources.get("healthnet_ca_rate_file")
-        if p and Path(p).exists():
-            target = config.raw_dir / Path(p).name
-            if not target.exists():
-                try:
-                    target.symlink_to(p)
-                except OSError:
-                    shutil.copy(p, target)
+def verify_and_log_inputs(config):
+    """Log resolved non-invasive dataset pointers before pipeline execution."""
+    config.locator.log_resolution_summary()
 
 
 def main():
@@ -210,10 +184,15 @@ def main():
     cli_parser.add_argument("--cost-effectiveness", action="store_true", help="Run C7 cost-effectiveness analysis")
     cli_parser.add_argument("--sample", type=int, default=None, help="Process first N records in rate extraction")
     cli_parser.add_argument("--config", type=str, default=None, help="Path to custom config.yaml")
+    cli_parser.add_argument("--fixtures", action="store_true", help="Use test fixture datasets instead of production inputs")
 
     args = cli_parser.parse_args()
-    config = load_config(args.config)
-    stage_input_files_if_needed(config)
+    config = load_config(args.config, use_fixtures=args.fixtures)
+    if config.use_fixtures:
+        logger.warning("********************************************************************************")
+        logger.warning("RUNNING ON TEST FIXTURES (demo mode, outputs are not real data)")
+        logger.warning("********************************************************************************")
+    verify_and_log_inputs(config)
 
     backend_info = get_ijson_backend_info()
     logger.info(f"Active ijson backend: {backend_info['active_backend']}")

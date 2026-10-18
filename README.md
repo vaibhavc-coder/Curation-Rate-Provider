@@ -21,19 +21,59 @@ Production-grade data pipeline for CMS Price Transparency Data (TiC v2.0.0). Bui
 
 ---
 
-## 2. Data Sources & Placement
+## 2. Attaching the Datasets (Non-Invasive Data Pointers)
 
-External downloads from federal CMS and payer portals cannot be fully automated via script due to dynamic download tokens and portal sessions. Download the official source files from the public URLs below and place them in the corresponding repository folders:
+The pipeline is built with a **read-only, zero-copy architecture**. You do **NOT** need to move, rename, or copy gigabytes of data into the project repository. Datasets can live anywhere on your filesystem, external drive, or network share.
 
-| Dataset | Public Download Source URL | Destination Directory | Expected File / Pattern |
-| :--- | :--- | :--- | :--- |
-| **Centene Index Files** | [Centene Price Transparency Page](https://www.centene.com/price-transparency-files.html) | `data/index/` | `*_index*.json` (e.g. `2026-09-30_healthnet_index.json`, Ambetter, QualChoice, Fidelis) |
-| **Health Net CA Rate File** | [Centene Price Transparency Page](https://www.centene.com/price-transparency-files.html) | `data/raw/` | `*healthnet-ca*in-network.json` (670 MB uncompressed JSON) |
-| **CMS NPPES Full Monthly File** | [CMS NPPES Download Page](https://download.cms.gov/nppes/NPI_Files.html) | `data/reference/` | `NPPES_Data_Dissemination_October_2026_V2.zip` (1.1 GB, **keep zipped**) |
-| **NUCC Taxonomy Code Set** | [National Uniform Claim Committee](https://nucc.org) | `data/reference/` | `nucc_taxonomy.csv` |
-| **CMS Doctors & Clinicians** | [CMS Provider Data Catalog](https://data.cms.gov/provider-data/) | `data/reference/` | `cms_dac_target_npis.parquet` (or run `python scripts/filter_cms_dac.py`) |
-| **CMS Hospital General Info** | [CMS Provider Data Catalog](https://data.cms.gov/provider-data/) | `data/reference/` | `hospital_general_information.csv` |
-| **HiLabs Benchmark Workbook** | Provided by hackathon organizers (*not tracked in repo*) | `data/reference/` | `Rate_Benchmarking_Individual_Weights_Hackathon.xlsx` |
+### Three Ways to Attach Data (Choose Any):
+
+#### Method 1: Environment Variables (Fastest for CI/CD & Shells)
+Export paths in your terminal or `.env` file:
+```bash
+# Point to a single folder containing all raw & reference files:
+export PTD_DATA_ROOT="/path/to/my/downloaded_data"
+
+# Or point to specific files individually:
+export PTD_RATE_FILE_CA="/path/to/2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json"
+export PTD_INDEX_DIR="/path/to/index_files/"
+export PTD_NPPES_ZIP="/path/to/NPPES_Data_Dissemination_October_2026_V2.zip"
+export PTD_NUCC_TAXONOMY="/path/to/nucc_taxonomy.csv"
+```
+
+#### Method 2: Per-Machine `config.local.yaml` (Recommended for Local Dev)
+Copy the provided example template and customize the paths (gitignored automatically):
+```bash
+cp config.local.example.yaml config.local.yaml
+# Edit config.local.yaml with your favorite editor
+```
+
+#### Method 3: Non-Invasive Symlink Helper (Zero Duplication)
+Automatically create safe symbolic links into `data/` without copying data:
+```bash
+# Preview what would be linked (dry run):
+python scripts/link_data.py --dry-run --source /path/to/my/downloads
+
+# Create links:
+python scripts/link_data.py --source /path/to/my/downloads
+
+# Clean up symlinks at any time:
+python scripts/link_data.py --remove
+```
+*(On Windows where symlinks require developer mode, Method 1 or 2 is recommended).*
+
+### Verifying Inputs with `make doctor`
+Run the built-in system doctor to verify that all datasets are resolved, readable, and match expected SHA-256 checksums:
+```bash
+make doctor
+# Or directly:
+python scripts/check_inputs.py
+```
+
+### Running on Test Fixtures (Demo Mode)
+If you don't have the full 1.8 GB raw datasets downloaded, you can run the complete pipeline end-to-end on bundled test fixtures:
+```bash
+python run_pipeline.py --fixtures --all
+```
 
 ---
 
@@ -54,12 +94,15 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Step 2: Run Automated Test Suite
+### Step 2: Verify Inputs and Run Automated Test Suite
 ```bash
-# Run all 55 unit and regression tests
+# Verify dataset pointers
+make doctor
+
+# Run all 65 unit, regression, and data locator tests
 pytest -v
 ```
-*Expected runtime: ~4.5 seconds. Result: 55 passed.*
+*Expected runtime: ~3.5 seconds. Result: 65 passed.*
 
 ### Step 3: Run the Complete Pipeline End-to-End
 ```bash
@@ -139,4 +182,4 @@ In the interest of rigorous scientific integrity, we document the following empi
 | **C5: Non-Circular Address Linkage** | 35 pts | [`data/interim/npi_tin_address_links.parquet`](data/interim/npi_tin_address_links.parquet)<br>[`data/output/coverage_report.json`](data/output/coverage_report.json) | **4 mutually exclusive tiers (100% sum)**; **100.0% cross-source physical agreement** on Strict Verified; non-circular multi-NPI TIN corroboration. |
 | **C6: Production Deliverables & Schemas** | 15 pts | [`data/output/final_curated_rates.parquet`](data/output/final_curated_rates.parquet)<br>[`data/output/final_rates_ps_grain.csv`](data/output/final_rates_ps_grain.csv)<br>[`data/output/final_curated_rates.xlsx`](data/output/final_curated_rates.xlsx) | **69,144 multi-site rows**; clean 6-column problem-statement grain CSV & Sheet 1; full 45-column lossless view in Parquet/CSV/Sheet 2. |
 | **C7: Cost-Effectiveness Frontier (Brownie)** | Extra pts | [`data/output/cost_effectiveness.parquet`](data/output/cost_effectiveness.parquet)<br>[`app/streamlit_app.py`](app/streamlit_app.py) | **27,559 rate keys evaluated** across 19 regional county cohorts; provider efficiency index; interactive Streamlit app. |
-| **Architecture & Scalability** | 5 pts | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md)<br>[`docs/EXEC_SUMMARY.md`](docs/EXEC_SUMMARY.md)<br>[`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md) | **55 unit tests pass**; honest per-phase RSS profiling (<250MB streaming via chunked Parquet writing); zero hardcoded paths; QualChoice second-file test. |
+| **Architecture & Scalability** | 5 pts | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md)<br>[`docs/EXEC_SUMMARY.md`](docs/EXEC_SUMMARY.md)<br>[`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md) | **65 unit and locator tests pass**; honest per-phase RSS profiling (<250MB streaming via chunked Parquet writing); zero hardcoded paths; QualChoice second-file test. |

@@ -103,7 +103,7 @@ class IndexParser:
 
         logger.info(f"Streaming index file: {file_path.name} (brand: {brand})")
 
-        with open(file_path, "rb") as f:
+        with self.config.locator.open_readonly(file_path, "rb") as f:
             # TiC schema v2.0.0: reporting_structure is a list of objects
             # Each object contains reporting_plans list and in_network_files list
             structures = ijson.items(f, "reporting_structure.item")
@@ -160,9 +160,9 @@ class IndexParser:
         all_records = []
         brand_raw_counts = {}
 
-        index_files = sorted(self.index_dir.glob("*.json"))
+        index_files = self.config.locator.get_index_files()
         if not index_files:
-            raise FileNotFoundError(f"No index json files found in {self.index_dir}")
+            raise FileNotFoundError(f"No index json files found via DataLocator")
 
         for f in index_files:
             records = self.parse_single_index(f)

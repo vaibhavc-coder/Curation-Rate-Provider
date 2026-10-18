@@ -1,0 +1,68 @@
+{
+  "healthnet_ca_rate_file": {
+    "path": "data/raw/2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json",
+    "filename": "2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json",
+    "sha256": "3b3e4e220f421010b8ef925a51d4a3c17863b9fbaa853841c1a4927eb74a0960",
+    "size_bytes": 701615514
+  },
+  "healthnet_or_rate_file": {
+    "path": "data/raw/2026-09-30_centene-management-company-llc_healthnet-or_in-network.json",
+    "filename": "2026-09-30_centene-management-company-llc_healthnet-or_in-network.json",
+    "sha256": "93d39843c4bce02e1f5ff404c1aff55b1f0a5292e1cf5516a99de0effe9a565e",
+    "size_bytes": 9025111
+  },
+  "nppes_zip": {
+    "path": "data/reference/NPPES_Data_Dissemination_October_2026_V2.zip",
+    "filename": "NPPES_Data_Dissemination_October_2026_V2.zip",
+    "sha256": "45b17c5fbfb919c4fa4878c0bbbeca979c4fa3bc87a6d733682b61a3e63c662e",
+    "size_bytes": 1159720219
+  },
+  "nucc_taxonomy": {
+    "path": "data/reference/nucc_taxonomy.csv",
+    "filename": "nucc_taxonomy.csv",
+    "sha256": "696c5b2b8f7b0aaee33a0c4f25906e275a7d8a654e62bbb7a91a9da0550dbfb9",
+    "size_bytes": 521574
+  },
+  "cms_dac": {
+    "path": "data/reference/cms_dac_target_npis.parquet",
+    "filename": "cms_dac_target_npis.parquet",
+    "sha256": "6f68961d1c0cdec93435bd50e0363d55a248bdc636d1c5709dc3a995b95890fe",
+    "size_bytes": 17617
+  },
+  "hospital_general_info": {
+    "path": "data/reference/hospital_general_information.csv",
+    "filename": "hospital_general_information.csv",
+    "sha256": "f874f09fef895a1ccf5bb7392dcbb2be05c9860339261b093fe00f0c1b013480",
+    "size_bytes": 1450767
+  },
+  "hilabs_workbook": {
+    "path": "data/reference/Rate_Benchmarking_Individual_Weights_Hackathon.xlsx",
+    "filename": "Rate_Benchmarking_Individual_Weights_Hackathon.xlsx",
+    "sha256": "22b8d570d3e493c40d72b80100dba92c0856d3091bba77d42219fae93c505124",
+    "size_bytes": 51219
+  },
+  "healthnet_index": {
+    "path": "data/index/2026-09-30_healthnet_index.json",
+    "filename": "2026-09-30_healthnet_index.json",
+    "sha256": "a397c9f9605e0da76603cd13385bfac90314e1bcc7307ceff224a21482b85b58",
+    "size_bytes": 575930
+  },
+  "ambetter_index": {
+    "path": "data/index/2026-09-28_ambetter_index.json",
+    "filename": "2026-09-28_ambetter_index.json",
+    "sha256": "5bdedc3b0108305bd19d26cd554a57499982def9d79ec3052ca645c32a1df25a",
+    "size_bytes": 359636
+  },
+  "qualchoice_index": {
+    "path": "data/index/2026-09-28_qualchoice_index.json",
+    "filename": "2026-09-28_qualchoice_index.json",
+    "sha256": "fbf880349d00ae04179fd660f29b411a082d65b821d8a23b437269dedccce403",
+    "size_bytes": 88828
+  },
+  "fidelis_index": {
+    "path": "data/index/2026-09-28_fidelis_index.json",
+    "filename": "2026-09-28_fidelis_index.json",
+    "sha256": "8d4e9262bf539d79b633685d1839ddba26d98f9fa4ee530a12453cdfc60934df",
+    "size_bytes": 30014
+  }
+}

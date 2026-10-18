@@ -69,8 +69,8 @@ class CostEffectivenessAnalyzer:
 
     def load_hilabs_weights(self):
         """Load procedure benchmarking weights from HiLabs workbook."""
-        wb_path = self.reference_dir / "Rate_Benchmarking_Individual_Weights_Hackathon.xlsx"
-        if not wb_path.exists():
+        wb_path = self.config.locator.get_path("hilabs_workbook", required=False)
+        if not wb_path or not wb_path.exists():
             return
         try:
             wb = openpyxl.load_workbook(wb_path, data_only=True)

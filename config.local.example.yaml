@@ -1,0 +1,37 @@
+# config.local.example.yaml
+# Machine-specific non-invasive data pointers for PTD Pipeline.
+# Copy this file to config.local.yaml and adjust paths to your local filesystem.
+# config.local.yaml is gitignored and will never be committed.
+
+pointers:
+  # Primary Centene California Commercial In-Network Rate File (.json or .json.gz)
+  # Can be a relative path, absolute path, or glob pattern (e.g. *healthnet-ca*in-network*.json)
+  healthnet_ca_rate_file: "data/raw/2026-09-30_centene-management-company-llc_healthnet-ca_in-network.json"
+
+  # Directory containing Centene index files, or specific glob pattern
+  index_dir: "data/index"
+
+  # CMS NPPES Full Monthly Dissemination Zip Archive (keep zipped!)
+  nppes_zip: "data/reference/NPPES_Data_Dissemination_October_2026_V2.zip"
+
+  # NUCC Healthcare Provider Taxonomy Code Set CSV
+  nucc_taxonomy: "data/reference/nucc_taxonomy.csv"
+
+  # CMS Doctors and Clinicians national target clinicians file (.parquet or .csv)
+  cms_dac: "data/reference/cms_dac_target_npis.parquet"
+
+  # CMS Hospital General Information CSV
+  hospital_general_info: "data/reference/hospital_general_information.csv"
+
+  # HiLabs Specialty-Procedure Benchmark Workbook (provided by hackathon organizers)
+  hilabs_workbook: "data/reference/Rate_Benchmarking_Individual_Weights_Hackathon.xlsx"
+
+  # Optional second rate file for multi-file extensibility tests
+  healthnet_or_rate_file: "data/raw/2026-09-30_centene-management-company-llc_healthnet-or_in-network.json"
+
+# Remote streaming control: set to true ONLY if you want to stream an https:// URL pointer
+# Streams into data/interim/remote_cache without modifying the source location (default: false)
+allow_remote: false
+
+# Fixture fallback mode: set to true to force pipeline execution on lightweight test fixtures
+use_fixtures: false
